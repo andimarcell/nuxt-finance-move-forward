@@ -68,8 +68,18 @@ const fillForm = () => {
     state.description = props.transaction.description;
     state.amount = props.transaction.amount;
     state.type = props.transaction.type.toLowerCase();
-    state.category = props.transaction.category || ""; // ISI NILAI KATEGORI SEBELUMNYA SAAT EDIT
     state.created_at = props.transaction.created_at.split("T")[0];
+    const originalCategory = props.transaction.category?.toLowerCase() || "";
+    if (
+      categories.includes(originalCategory) &&
+      originalCategory !== "lainnya"
+    ) {
+      state.category = originalCategory;
+      customCategory.value = originalCategory; // Simpan kategori asli jika valid
+    } else {
+      state.category = "lainnya"; // Set ke "lainnya" jika kategori tidak valid
+      customCategory.value = originalCategory; // Simpan kategori kustom yang dimasukkan pengguna
+    }
   } else {
     clearForm();
   }
@@ -90,6 +100,7 @@ const clearForm = () => {
   state.amount = 0;
   state.type = "income";
   state.category = ""; // BERSIHKAN KATEGORI
+  customCategory.value = ""; // BERSIHKAN KATEGORI KUSTOM
   state.created_at = format(new Date(), "yyyy-MM-dd");
 
   nextTick(() => {
@@ -116,25 +127,48 @@ const state = reactive({
 });
 
 // Daftar pilihan kategori untuk diisi di dropdown UI
-const categories = ["makanan", "transportasi", "hiburan", "pendidikan", "bulanan", "lainnya"];
+const categories = [
+  "gaji",
+  "bonus",
+  "transportasi",
+  "hiburan",
+  "pendidikan",
+  "bulanan",
+  "lainnya",
+];
+const customCategory = ref(""); // State untuk kategori kustom yang dimasukkan pengguna
 
 async function onSubmit(event) {
   if (isOverBudget.value) return;
+
+  if (state.category === "lainnya" && !customCategory.value.trim()) {
+    return toast.add({
+      title: "Gagal",
+      description: "Silahkan ketik nama kategori kustom Anda!",
+      color: "error",
+      icon: "i-heroicons-x-circle",
+    });
+  }
 
   isLoading.value = true;
   try {
     let error;
 
+    const payload = { ...state };
+    if (state.category === "lainnya" && customCategory.value) {
+      payload.category = customCategory.value.toLowerCase().trim(); // Gunakan kategori kustom yang dimasukkan pengguna
+    }
+
     if (isEditing.value) {
       const { error: editError } = await supabase
         .from("transactions")
-        .update(state)
+        .update(payload)
         .eq("id", props.transaction.id);
       error = editError;
     } else {
       const { error: insertError } = await supabase
         .from("transactions")
-        .insert([state]);
+        .insert([payload]);
       error = insertError;
     }
     if (error) throw error;
@@ -192,7 +226,7 @@ async function onSubmit(event) {
                 ? 'ring-1 ring-red-400 dark:ring-red-400 border-red-400 dark:border-red-400'
                 : 'focus:ring-2 focus:ring-primary-400 dark:focus:ring-primary-400 border-gray-300 dark:border-gray-700',
             ]"
-          ></textarea>  
+          ></textarea>
         </UFormField>
 
         <UFormField label="Nominal" name="amount">
@@ -232,6 +266,18 @@ async function onSubmit(event) {
           />
         </UFormField>
 
+        <UFormField
+          v-if="state.category === 'lainnya'"
+          label="Nama Kategori Baru"
+          required
+        >
+          <UInput
+            v-model="customCategory"
+            placeholder="Ketik nama kategori kustom baru Anda..."
+            icon="i-heroicons-pencil-square"
+          />
+        </UFormField>
+
         <UFormField label="Tanggal" name="created_at">
           <UInput
             v-model="state.created_at"
@@ -248,7 +294,9 @@ async function onSubmit(event) {
             :color="isOverBudget ? 'red' : 'primary'"
             class="cursor-pointer"
           />
-          <UButton variant="outline" @click="clearForm" class="cursor-pointer"> Bersihkan </UButton>
+          <UButton variant="outline" @click="clearForm" class="cursor-pointer">
+            Bersihkan
+          </UButton>
         </div>
       </UForm>
     </template>
