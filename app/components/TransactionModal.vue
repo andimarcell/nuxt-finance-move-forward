@@ -5,7 +5,7 @@ import { z } from "zod";
 import { transactionTypes } from "~/utils/constants";
 
 const formRef = useTemplateRef("form");
-const textareaRef = ref(null); // Ref untuk mengakses elemen textarea asli
+const textareaRef = ref(null);
 
 const props = defineProps({
   modelValue: Boolean,
@@ -34,15 +34,13 @@ const isModalOpen = computed({
 
 const isEditing = computed(() => !!props.transaction);
 
-// Fungsi cerdas untuk memperbesar tinggi textarea otomatis sesuai jumlah baris ketikan
 const autoResize = () => {
   const el = textareaRef.value;
   if (!el) return;
-  el.style.height = "auto"; // Reset tinggi terlebih dahulu
-  el.style.height = el.scrollHeight + "px"; // Set tinggi sesuai tinggi konten di dalamnya
+  el.style.height = "auto";
+  el.style.height = el.scrollHeight + "px";
 };
 
-// Logic menghitung saldo Yang bisa dipakai
 const availableBalance = computed(() => {
   let available = props.currentBalance;
 
@@ -52,13 +50,11 @@ const availableBalance = computed(() => {
   return available;
 });
 
-// logika validasi apakah over budget?
 const isOverBudget = computed(() => {
   if (state.type !== "expense") return false;
   return state.amount > availableBalance.value;
 });
 
-// Forma rupiah khusus untuk teks peringatan
 const formattedAvailableBalance = computed(() => {
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
@@ -72,17 +68,16 @@ const fillForm = () => {
     state.description = props.transaction.description;
     state.amount = props.transaction.amount;
     state.type = props.transaction.type.toLowerCase();
-    state.created_at = props.transaction.created_at.split("T")[0]; // Format ke yyyy-MM-dd
+    state.category = props.transaction.category || ""; // ISI NILAI KATEGORI SEBELUMNYA SAAT EDIT
+    state.created_at = props.transaction.created_at.split("T")[0];
   } else {
     clearForm();
   }
 };
 
-// Pantau perubahan modal terbuka
 watch(isModalOpen, (val) => {
   if (val) {
     fillForm();
-    // Tunggu komponen dirender penuh (nextTick), lalu sesuaikan tinggi textarea
     nextTick(() => {
       autoResize();
     });
@@ -90,34 +85,39 @@ watch(isModalOpen, (val) => {
 });
 
 const clearForm = () => {
-  formRef.value?.clear(); // Menghapus pesan error validasi
+  formRef.value?.clear();
   state.description = "";
   state.amount = 0;
   state.type = "income";
+  state.category = ""; // BERSIHKAN KATEGORI
   state.created_at = format(new Date(), "yyyy-MM-dd");
 
-  // Kembalikan tinggi textarea ke tinggi semula (1 baris) setelah dibersihkan
   nextTick(() => {
     autoResize();
   });
 };
 
-// Schema Validasi
+// 1. TAMBAHKAN VALIDASI 'category' PADA SKEMA ZOD
 const schema = z.object({
   description: z.string().min(1, "Keterangan wajib diisi"),
   amount: z.number().positive("Nominal harus lebih dari 0"),
   type: z.enum(["income", "expense"]),
+  category: z.string().min(1, "Kategori wajib dipilih"), // Validasi kolom kategori
   created_at: z.string().min(1, "Tanggal wajib diisi"),
 });
 
+// 2. TAMBAHKAN PARAMETER 'category' PADA STATE FORM
 const state = reactive({
   description: "",
   amount: 0,
   type: "income",
+  category: "", // State penampung kategori terpilih
   created_at: format(new Date(), "yyyy-MM-dd"),
 });
 
-// Logic Submit
+// Daftar pilihan kategori untuk diisi di dropdown UI
+const categories = ["makanan", "transportasi", "hiburan", "pendidikan", "bulanan", "lainnya"];
+
 async function onSubmit(event) {
   if (isOverBudget.value) return;
 
@@ -180,7 +180,6 @@ async function onSubmit(event) {
         class="space-y-4"
       >
         <UFormField label="Keterangan" name="description" v-slot="{ error }">
-          <!-- MENGGUNAKAN TEXTAREA RESPONSIF: Tanpa scrollbar & tanpa resize-handle -->
           <textarea
             ref="textareaRef"
             v-model="state.description"
@@ -199,7 +198,6 @@ async function onSubmit(event) {
         <UFormField label="Nominal" name="amount">
           <UInput v-model.number="state.amount" type="number" />
 
-          <!-- peringatan over budget muncul secara reaktif-->
           <div
             v-if="isOverBudget"
             class="flex items-start gap-1 mt-2 text-red-500 dark:text-red-400 text-sm font-medium"
@@ -224,6 +222,16 @@ async function onSubmit(event) {
           />
         </UFormField>
 
+        <!-- 3. TAMBAHKAN KOLOM INPUT PILIHAN KATEGORI DI TEMPLATE -->
+        <UFormField label="Kategori" name="category">
+          <USelect
+            v-model="state.category"
+            :items="categories"
+            placeholder="Pilih kategori transaksi..."
+            class="cursor-pointer"
+          />
+        </UFormField>
+
         <UFormField label="Tanggal" name="created_at">
           <UInput
             v-model="state.created_at"
@@ -233,14 +241,14 @@ async function onSubmit(event) {
         </UFormField>
 
         <div class="flex justify-between pt-4">
-          <!-- Tombol save akan mati (disabled) jika isOverBudget bernilai true-->
           <UButton
             type="submit"
             :label="isOverBudget ? 'Saldo Tidak Cukup' : 'Simpan Transaksi'"
             :disabled="isOverBudget"
             :color="isOverBudget ? 'red' : 'primary'"
+            class="cursor-pointer"
           />
-          <UButton variant="outline" @click="clearForm"> Bersihkan </UButton>
+          <UButton variant="outline" @click="clearForm" class="cursor-pointer"> Bersihkan </UButton>
         </div>
       </UForm>
     </template>
