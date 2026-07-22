@@ -306,11 +306,15 @@ async function onSubmit(event) {
 
         <!-- 3. TAMBAHKAN KOLOM INPUT PILIHAN KATEGORI DI TEMPLATE -->
         <UFormField label="Kategori" name="category">
-          <USelect
+          <USelectMenu
             v-model="state.category"
             :items="mergedCategories"
             placeholder="Pilih kategori transaksi..."
-            class="cursor-pointer"
+            class="w-[35%] capitalize cursor-pointer"
+            :ui="{
+              trigger: 'capitalize',
+              content: 'w-[var(--radix-select-trigger-width)] min-w-[200px] capitalize'
+            }"
           />
         </UFormField>
 
