@@ -1,6 +1,14 @@
 <script setup>
 import { format } from "date-fns";
-import { useTemplateRef, reactive, computed, watch, ref, nextTick } from "vue";
+import {
+  useTemplateRef,
+  reactive,
+  computed,
+  watch,
+  ref,
+  nextTick,
+  onMounted,
+} from "vue";
 import { z } from "zod";
 import { transactionTypes } from "~/utils/constants";
 
@@ -71,7 +79,7 @@ const fillForm = () => {
     state.created_at = props.transaction.created_at.split("T")[0];
     const originalCategory = props.transaction.category?.toLowerCase() || "";
     if (
-      categories.includes(originalCategory) &&
+      mergedCategories.value.includes(originalCategory) &&
       originalCategory !== "lainnya"
     ) {
       state.category = originalCategory;
@@ -127,16 +135,55 @@ const state = reactive({
 });
 
 // Daftar pilihan kategori untuk diisi di dropdown UI
-const categories = [
+const defaultCategories = [
   "gaji",
   "bonus",
   "transportasi",
   "hiburan",
   "pendidikan",
   "bulanan",
-  "lainnya",
 ];
 const customCategory = ref(""); // State untuk kategori kustom yang dimasukkan pengguna
+const customCategories = ref([]); // State untuk kategori kustom yang diambil dari database
+
+onMounted(() => {
+  fetchUserCategories(); // Ambil kategori kustom sekali saja di awal saat halaman dimuat
+});
+
+const fetchUserCategories = async () => {
+  if (!user.value) return;
+
+  try {
+    const { data, error } = await supabase
+      .from("transactions")
+      .select("category");
+
+    if (error) throw error;
+
+    if (data) {
+      const uniqueCategories = [
+        ...new Set(
+          data
+            .map((t) => (t.category ? t.category.toLowerCase().trim() : ""))
+            .filter(
+              (cat) =>
+                cat !== "" &&
+                !defaultCategories.includes(cat) &&
+                cat !== "lainnya",
+            ),
+        ),
+      ];
+      customCategories.value = uniqueCategories;
+    }
+  } catch (err) {
+    console.error("Gagal mengambil kategori pengguna:", err.message);
+  }
+};
+
+const mergedCategories = computed(() => {
+  const combined = [...defaultCategories, ...customCategories.value];
+  return [...new Set(combined), "lainnya"];
+});
 
 async function onSubmit(event) {
   if (isOverBudget.value) return;
@@ -172,6 +219,7 @@ async function onSubmit(event) {
       error = insertError;
     }
     if (error) throw error;
+    await fetchUserCategories();
     toast.add({
       title: "Sukses",
       description: isEditing.value
@@ -205,7 +253,7 @@ async function onSubmit(event) {
     :close="{ color: 'neutral', variant: 'ghost', class: 'cursor-pointer' }"
   >
     <template #body>
-      <TransactionForm @submit="isModalOpen = false" />
+      <!-- <TransactionForm @submit="isModalOpen = false" />  -->
       <UForm
         ref="formRef"
         :schema="schema"
@@ -260,7 +308,7 @@ async function onSubmit(event) {
         <UFormField label="Kategori" name="category">
           <USelect
             v-model="state.category"
-            :items="categories"
+            :items="mergedCategories"
             placeholder="Pilih kategori transaksi..."
             class="cursor-pointer"
           />
