@@ -185,6 +185,10 @@ const mergedCategories = computed(() => {
   return [...new Set(combined), "lainnya"];
 });
 
+const isCategorySelected = computed(() => {
+  return !!state.category;
+});
+
 async function onSubmit(event) {
   if (isOverBudget.value) return;
 
@@ -261,50 +265,6 @@ async function onSubmit(event) {
         @submit="onSubmit"
         class="space-y-4"
       >
-        <UFormField label="Keterangan" name="description" v-slot="{ error }">
-          <textarea
-            ref="textareaRef"
-            v-model="state.description"
-            placeholder="Masukkan keterangan..."
-            rows="1"
-            @input="autoResize"
-            :class="[
-              'relative block w-full resize-none overflow-hidden focus:outline-none rounded-md placeholder-gray-400 dark:placeholder-gray-500 text-sm px-3 py-2 border bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-150',
-              error
-                ? 'ring-1 ring-red-400 dark:ring-red-400 border-red-400 dark:border-red-400'
-                : 'focus:ring-2 focus:ring-primary-400 dark:focus:ring-primary-400 border-gray-300 dark:border-gray-700',
-            ]"
-          ></textarea>
-        </UFormField>
-
-        <UFormField label="Nominal" name="amount">
-          <UInput v-model.number="state.amount" type="number" />
-
-          <div
-            v-if="isOverBudget"
-            class="flex items-start gap-1 mt-2 text-red-500 dark:text-red-400 text-sm font-medium"
-          >
-            <UIcon
-              name="i-heroicons-exclamation-triangle"
-              class="w-5 h-5 shrink-0"
-            />
-            <p>
-              Saldo tidak mencukupi! Sisa saldo yang bisa Anda gunakan hanya
-              <strong>{{ formattedAvailableBalance }}</strong>
-            </p>
-          </div>
-        </UFormField>
-
-        <UFormField label="Jenis Transaksi" name="type">
-          <USelect
-            v-model="state.type"
-            :items="transactionTypes"
-            option-attribute="label"
-            value-attribute="value"
-          />
-        </UFormField>
-
-        <!-- 3. TAMBAHKAN KOLOM INPUT PILIHAN KATEGORI DI TEMPLATE -->
         <UFormField label="Kategori" name="category">
           <USelectMenu
             v-model="state.category"
@@ -313,7 +273,8 @@ async function onSubmit(event) {
             class="w-[35%] capitalize cursor-pointer"
             :ui="{
               trigger: 'capitalize',
-              content: 'w-[var(--radix-select-trigger-width)] min-w-[200px] capitalize'
+              content:
+                'w-[var(--radix-select-trigger-width)] min-w-[200px] capitalize',
             }"
           />
         </UFormField>
@@ -330,25 +291,74 @@ async function onSubmit(event) {
           />
         </UFormField>
 
-        <UFormField label="Tanggal" name="created_at">
-          <UInput
-            v-model="state.created_at"
-            type="date"
-            icon="i-heroicons-calendar-20-solid"
-          />
-        </UFormField>
+        <div v-if="isCategorySelected" class="space-y-4">
+          <UFormField label="Keterangan" name="description" v-slot="{ error }">
+            <textarea
+              ref="textareaRef"
+              v-model="state.description"
+              placeholder="Masukkan keterangan..."
+              rows="1"
+              @input="autoResize"
+              :class="[
+                'relative block w-full resize-none overflow-hidden focus:outline-none rounded-md placeholder-gray-400 dark:placeholder-gray-500 text-sm px-3 py-2 border bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-150',
+                error
+                  ? 'ring-1 ring-red-400 dark:ring-red-400 border-red-400 dark:border-red-400'
+                  : 'focus:ring-2 focus:ring-primary-400 dark:focus:ring-primary-400 border-gray-300 dark:border-gray-700',
+              ]"
+            ></textarea>
+          </UFormField>
 
-        <div class="flex justify-between pt-4">
-          <UButton
-            type="submit"
-            :label="isOverBudget ? 'Saldo Tidak Cukup' : 'Simpan Transaksi'"
-            :disabled="isOverBudget"
-            :color="isOverBudget ? 'red' : 'primary'"
-            class="cursor-pointer"
-          />
-          <UButton variant="outline" @click="clearForm" class="cursor-pointer">
-            Bersihkan
-          </UButton>
+          <UFormField label="Nominal" name="amount">
+            <UInput v-model.number="state.amount" type="number" />
+
+            <div
+              v-if="isOverBudget"
+              class="flex items-start gap-1 mt-2 text-red-500 dark:text-red-400 text-sm font-medium"
+            >
+              <UIcon
+                name="i-heroicons-exclamation-triangle"
+                class="w-5 h-5 shrink-0"
+              />
+              <p>
+                Saldo tidak mencukupi! Sisa saldo yang bisa Anda gunakan hanya
+                <strong>{{ formattedAvailableBalance }}</strong>
+              </p>
+            </div>
+          </UFormField>
+
+          <UFormField label="Jenis Transaksi" name="type">
+            <USelect
+              v-model="state.type"
+              :items="transactionTypes"
+              option-attribute="label"
+              value-attribute="value"
+            />
+          </UFormField>
+
+          <UFormField label="Tanggal" name="created_at">
+            <UInput
+              v-model="state.created_at"
+              type="date"
+              icon="i-heroicons-calendar-20-solid"
+            />
+          </UFormField>
+
+          <div class="flex justify-between pt-4">
+            <UButton
+              type="submit"
+              :label="isOverBudget ? 'Saldo Tidak Cukup' : 'Simpan Transaksi'"
+              :disabled="isOverBudget"
+              :color="isOverBudget ? 'red' : 'primary'"
+              class="cursor-pointer"
+            />
+            <UButton
+              variant="outline"
+              @click="clearForm"
+              class="cursor-pointer"
+            >
+              Bersihkan
+            </UButton>
+          </div>
         </div>
       </UForm>
     </template>
