@@ -186,7 +186,12 @@ const mergedCategories = computed(() => {
 });
 
 const isCategorySelected = computed(() => {
-  return !!state.category;
+  if (!state.category) return false;
+
+  if (state.category === "lainnya") {
+    return !!customCategory.value.trim();
+  }
+  return true;
 });
 
 async function onSubmit(event) {
