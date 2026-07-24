@@ -91,14 +91,6 @@ const chartOptions = computed(() => {
             activeIndex.value = config.dataPointIndex;
           }
         },
-        dataPointMouseEnter: (event, chartContext, config) => {
-          if (
-            config.dataPointIndex !== undefined &&
-            config.dataPointIndex !== -1
-          ) {
-            activeIndex.value = config.dataPointIndex;
-          }
-        },
       },
     },
     labels: categorySummary.value.labels,
@@ -115,20 +107,20 @@ const chartOptions = computed(() => {
           labels: {
             show: true,
             name: {
-              show: true, // 1. Aktifkan kembali agar teks tengah muncul
+              show: true, // Aktifkan kembali agar teks tengah muncul
               fontSize: "12px",
               fontFamily: "Inter, sans-serif",
               color: "#9ca3af",
               offsetY: -4,
             },
             value: {
-              show: true, // 2. Aktifkan kembali agar teks tengah muncul
+              show: true, // Aktifkan kembali agar teks tengah muncul
               fontSize: "22px",
               fontFamily: "Inter, sans-serif",
               fontWeight: "bold",
               color: "#ffffff",
               offsetY: 6,
-              // 3. Menghitung persen secara dinamis saat kursor melakukan HOVER
+              // Menghitung persen secara dinamis saat kursor melakukan HOVER
               formatter: function (val, opts) {
                 if (!opts) return val;
                 const total = opts.globals.seriesTotals.reduce(
@@ -142,13 +134,13 @@ const chartOptions = computed(() => {
             },
             total: {
               show: true,
-              // 4. Tampilkan nama kategori aktif dari activeIndex saat TIDAK HOVER
+              // Tampilkan nama kategori aktif dari activeIndex saat TIDAK HOVER
               label:
                 categorySummary.value.list.length > 0
                   ? categorySummary.value.list[activeIndex.value].name
                   : "Nihil",
               color: "#9ca3af",
-              // 5. Tampilkan persen kategori aktif dari activeIndex saat TIDAK HOVER
+              // Tampilkan persen kategori aktif dari activeIndex saat TIDAK HOVER
               formatter: function () {
                 if (categorySummary.value.list.length === 0) return "0%";
                 return categorySummary.value.list[activeIndex.value].percent;
