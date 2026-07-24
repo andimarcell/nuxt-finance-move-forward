@@ -232,7 +232,7 @@ const cashColor = computed(() => {
   >
     <!-- Kolom 1 (Grafik) - Menggunakan order-1 (Atas di HP) dan lg:order-2 (Kanan di Desktop) -->
     <div class="order-1 lg:order-2 lg:col-span-1">
-      <ExpenseChart :transactions="transactions" />
+      <CategoryBreakdown :transactions="transactions" />
     </div>
 
     <!-- Kolom 2 (Daftar Transaksi) - Menggunakan order-2 (Bawah di HP) dan lg:order-1 (Kiri di Desktop) -->
