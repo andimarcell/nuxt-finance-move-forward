@@ -1,4 +1,4 @@
-<script setup>
+div<script setup>
 import { format } from "date-fns";
 import {
   useTemplateRef,
@@ -194,6 +194,20 @@ const isCategorySelected = computed(() => {
   return true;
 });
 
+// Mengontrol kapan sisa kolom input lainnya boleh muncul di layar
+const isCategoryFilled = computed(() => {
+  // Jika ketegori belum dipilih sama sekali, jangan muncuulkan apa-apa
+  if (!state.category) return false;
+
+  // Jika pilih "lainnya", wajib ketik minimal 3 karakter (1 kata) baru boleh muncul kolom lain
+  if (state.category === "lainnya") {
+    return customCategory.value.trim().length >= 4;
+  }
+
+  // Jika memilih kategori default lainnya, langsung munculkan kolom lain
+  return true;
+});
+
 async function onSubmit(event) {
   if (isOverBudget.value) return;
 
@@ -296,7 +310,7 @@ async function onSubmit(event) {
           />
         </UFormField>
 
-        <div v-if="isCategorySelected" class="space-y-4">
+        <div v-if="isCategoryFilled" class="space-y-4">
           <UFormField label="Keterangan" name="description" v-slot="{ error }">
             <textarea
               ref="textareaRef"
@@ -313,6 +327,7 @@ async function onSubmit(event) {
             ></textarea>
           </UFormField>
 
+          <!-- Input Nominal -->
           <UFormField label="Nominal" name="amount">
             <UInput v-model.number="state.amount" type="number" />
 
@@ -340,6 +355,7 @@ async function onSubmit(event) {
             />
           </UFormField>
 
+          <!-- Input Tanggal -->
           <UFormField label="Tanggal" name="created_at">
             <UInput
               v-model="state.created_at"
@@ -348,6 +364,7 @@ async function onSubmit(event) {
             />
           </UFormField>
 
+          <!-- Tombol Simpan -->
           <div class="flex justify-between pt-4">
             <UButton
               type="submit"
