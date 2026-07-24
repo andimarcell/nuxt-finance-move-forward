@@ -1,4 +1,5 @@
-div<script setup>
+div
+<script setup>
 import { format } from "date-fns";
 import {
   useTemplateRef,
@@ -289,7 +290,7 @@ async function onSubmit(event) {
             v-model="state.category"
             :items="mergedCategories"
             placeholder="Pilih kategori transaksi..."
-            class="w-[35%] capitalize cursor-pointer"
+            class="w-full capitalize cursor-pointer"
             :ui="{
               trigger: 'capitalize',
               content:
@@ -307,6 +308,7 @@ async function onSubmit(event) {
             v-model="customCategory"
             placeholder="Ketik nama kategori kustom baru Anda..."
             icon="i-heroicons-pencil-square"
+            class="w-full"
           />
         </UFormField>
 
@@ -329,7 +331,7 @@ async function onSubmit(event) {
 
           <!-- Input Nominal -->
           <UFormField label="Nominal" name="amount">
-            <UInput v-model.number="state.amount" type="number" />
+            <UInput v-model.number="state.amount" type="number" class="w-full" />
 
             <div
               v-if="isOverBudget"
@@ -352,6 +354,7 @@ async function onSubmit(event) {
               :items="transactionTypes"
               option-attribute="label"
               value-attribute="value"
+              class="w-full cursor-pointer"
             />
           </UFormField>
 
@@ -361,6 +364,7 @@ async function onSubmit(event) {
               v-model="state.created_at"
               type="date"
               icon="i-heroicons-calendar-20-solid"
+              class="w-full"
             />
           </UFormField>
 
