@@ -193,7 +193,7 @@ const series = computed(() => categorySummary.value.series);
           "
           @click="chartType = 'expense'"
         >
-          Belanja
+          Pengeluaran
         </button>
         <button
           type="button"
@@ -205,7 +205,7 @@ const series = computed(() => categorySummary.value.series);
           "
           @click="chartType = 'income'"
         >
-          Masuk
+          Pemasukan
         </button>
       </div>
     </div>
