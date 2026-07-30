@@ -123,6 +123,28 @@ const cashColor = computed(() => {
     ? "text-red-600 dark:text-red-400"
     : "text-green-600 dark:text-green-400";
 });
+
+// State penampug sonkronisasi tombol grafik aktif (default: 'expense')
+const activeChartType = ref("all")
+
+// Fungsi penyaringan data reaktif berdasarkan tombol aktif di grafik
+const filteredGroupByDate = computed(() => {
+  let grouped = {}
+
+  // Saring transaksi berdasarkan tombol aktif di grafik (activeChartType)
+  const filtered = transactions.value.filter(transaction => {
+    if (activeChartType.value === "all") return true
+    return transaction.type?.toLowerCase() === activeChartType.value
+  })
+
+  // Kelompokkan hasil filter berdasarkan tanggal
+  for (const transaction of filtered) {
+    const date = new Date(transaction.created_at).toISOString().split("T")[0]
+    if (!grouped[date]) grouped[date] = []
+    grouped[date].push(transaction)
+  }
+  return grouped
+})
 </script>
 
 <template>
@@ -232,13 +254,13 @@ const cashColor = computed(() => {
   >
     <!-- Kolom 1 (Grafik) - Menggunakan order-1 (Atas di HP) dan lg:order-2 (Kanan di Desktop) -->
     <div class="order-1 lg:order-2 lg:col-span-1">
-      <CategoryBreakdown :transactions="transactions" />
+      <CategoryBreakdown :transactions="transactions" v-model:chartType="activeChartType"/>
     </div>
 
     <!-- Kolom 2 (Daftar Transaksi) - Menggunakan order-2 (Bawah di HP) dan lg:order-1 (Kiri di Desktop) -->
     <div class="order-2 lg:order-1 lg:col-span-2">
       <div
-        v-for="(transactionOnDay, date) in transactionGroupByDate"
+        v-for="(transactionOnDay, date) in filteredGroupByDate"
         :key="date"
         class="mb-10"
       >

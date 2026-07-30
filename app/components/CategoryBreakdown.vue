@@ -10,11 +10,45 @@ const props = defineProps({
   },
 });
 
-// 1. KONTROL SAKELAR METODE: 'expense' (Belanja) secara default
-const chartType = ref("expense");
+// KONTROL SAKELAR METODE: 'expense' (Belanja) secara default
+const chartType = defineModel("chartType", { default: "expense" });
 
-// 2. LOGIKA AGREGASI DATA KATEGORI YANG SANGAT DETAIL
+// LOGIKA AGREGASI DATA KATEGORI YANG SANGAT DETAIL
 const categorySummary = computed(() => {
+  if (chartType.value === "all") {
+    const txs = props.transactions || [];
+    const incomeTotal = txs
+      .filter((t) => t.type?.toLowerCase() === "income")
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+    const expenseTotal = txs
+      .filter((t) => t.type?.toLowerCase() === "expense")
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    const list = [];
+    if (incomeTotal > 0) {
+      list.push({
+        name: "Pemasukan",
+        amount: incomeTotal,
+        percent: `${incomeTotal + expenseTotal === 0 ? 0 : Math.round((incomeTotal / (incomeTotal + expenseTotal)) * 100)}%`,
+        color: "#10b981", // Hijau untuk pemasukan
+      });
+    }
+    if (expenseTotal > 0) {
+      list.push({
+        name: "Pengeluaran",
+        amount: expenseTotal,
+        percent: `${incomeTotal + expenseTotal === 0 ? 0 : Math.round((expenseTotal / (incomeTotal + expenseTotal)) * 100)}%`,
+        color: "#ef4444", // Merah untuk pengeluaran
+      });
+    }
+    return {
+      list,
+      totalAmount: incomeTotal + expenseTotal,
+      series: list.map((item) => item.amount),
+      labels: list.map((item) => item.name),
+      colors: list.map((item) => item.color),
+    };
+  }
   const summary = {};
   let totalAmount = 0;
 
@@ -187,6 +221,18 @@ const series = computed(() => categorySummary.value.series);
           type="button"
           class="px-2.5 py-1 text-[10px] font-black rounded-md transition duration-150 cursor-pointer"
           :class="
+            chartType === 'all'
+              ? 'bg-primary-500 text-white shadow-sm'
+              : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+          "
+          @click="chartType = 'all'"
+        >
+          Semua
+        </button>
+        <button
+          type="button"
+          class="px-2.5 py-1 text-[10px] font-black rounded-md transition duration-150 cursor-pointer"
+          :class="
             chartType === 'expense'
               ? 'bg-primary-500 text-white shadow-sm'
               : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
@@ -278,6 +324,5 @@ const series = computed(() => categorySummary.value.series);
         </div>
       </div>
     </div>
-
   </div>
 </template>
