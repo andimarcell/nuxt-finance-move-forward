@@ -156,7 +156,7 @@ const filteredGroupByDate = computed(() => {
 const activeCategory = ref(null);
 
 // Watcher untuk menyetel ulang filter kategori menjadi null setiap kali pengguna berpindah tab utama
-watch(selectedView, () => {
+watch(activeChartType, () => {
   activeCategory.value = null;
 });
 

@@ -24,7 +24,7 @@ const emit = defineEmits(["update:chartType", "update:activeCategory"]);
 
 // LOGIKA AGREGASI DATA KATEGORI YANG SANGAT DETAIL
 const categorySummary = computed(() => {
-  if (props.chartType === "allocation") {
+  if (props.chartType === "all") {
     const txs = props.transactions || [];
     const incomeTotal = txs
       .filter((t) => t.type?.toLowerCase() === "income")
