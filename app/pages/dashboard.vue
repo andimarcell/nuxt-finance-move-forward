@@ -275,6 +275,7 @@ watch(activeChartType, () => {
   <section
     :key="selectedView"
     :class="{ 'opacity-50': isLoading, 'transition-opacity': true }"
+    class="min-h-150"
   >
     <!-- Kolom 2 (Daftar Transaksi) - Menggunakan order-2 (Bawah di HP) dan lg:order-1 (Kiri di Desktop) -->
     <div class="order-2 lg:order-1 lg:col-span-2">
