@@ -279,39 +279,5 @@ const series = computed(() => categorySummary.value.series);
       </div>
     </div>
 
-    <!-- 4. BAGIAN FOOTER (Indikator Real-Time & Dua Tombol Kapsul) -->
-    <div
-      class="mt-8 pt-4 border-t border-gray-100 dark:border-gray-800 text-center"
-    >
-      <!-- Indikator Hijau Terintegrasi -->
-      <div
-        class="flex items-center justify-center space-x-1.5 text-[10px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider"
-      >
-        <span
-          class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"
-        ></span>
-        <span>Data Terintegrasi</span>
-      </div>
-
-      <!-- Dua Tombol Pill Mewah di Bagian Bawah -->
-      <div class="flex justify-center gap-2 mt-4">
-        <UButton
-          label="Konfigurasi"
-          icon="i-heroicons-cog-6-tooth"
-          color="neutral"
-          variant="outline"
-          size="sm"
-          class="rounded-full cursor-pointer text-[10px] font-black"
-        />
-        <UButton
-          label="Lihat Analisis"
-          icon="i-heroicons-chart-bar"
-          color="neutral"
-          variant="outline"
-          size="sm"
-          class="rounded-full cursor-pointer text-[10px] font-black"
-        />
-      </div>
-    </div>
   </div>
 </template>
