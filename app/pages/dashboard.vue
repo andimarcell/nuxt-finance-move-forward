@@ -125,26 +125,26 @@ const cashColor = computed(() => {
 });
 
 // State penampug sonkronisasi tombol grafik aktif (default: 'expense')
-const activeChartType = ref("all")
+const activeChartType = ref("all");
 
 // Fungsi penyaringan data reaktif berdasarkan tombol aktif di grafik
 const filteredGroupByDate = computed(() => {
-  let grouped = {}
+  let grouped = {};
 
   // Saring transaksi berdasarkan tombol aktif di grafik (activeChartType)
-  const filtered = transactions.value.filter(transaction => {
-    if (activeChartType.value === "all") return true
-    return transaction.type?.toLowerCase() === activeChartType.value
-  })
+  const filtered = transactions.value.filter((transaction) => {
+    if (activeChartType.value === "all") return true;
+    return transaction.type?.toLowerCase() === activeChartType.value;
+  });
 
   // Kelompokkan hasil filter berdasarkan tanggal
   for (const transaction of filtered) {
-    const date = new Date(transaction.created_at).toISOString().split("T")[0]
-    if (!grouped[date]) grouped[date] = []
-    grouped[date].push(transaction)
+    const date = new Date(transaction.created_at).toISOString().split("T")[0];
+    if (!grouped[date]) grouped[date] = [];
+    grouped[date].push(transaction);
   }
-  return grouped
-})
+  return grouped;
+});
 </script>
 
 <template>
@@ -211,7 +211,14 @@ const filteredGroupByDate = computed(() => {
       :color="cashColor"
     />
   </section>
-
+  <section>
+    <div class="order-1 lg:order-2 lg:col-span-1">
+      <CategoryBreakdown
+        :transactions="transactions"
+        v-model:chartType="activeChartType"
+      />
+    </div>
+  </section>
   <!-- bagian header transaction-->
   <section
     class="flex flex-col sm:flex-row ml-1 sm:ml-0 justify-between mb-6 sm:mb-10 gap-2"
@@ -245,18 +252,11 @@ const filteredGroupByDate = computed(() => {
     </div>
   </section>
 
-  <!-- bagian list transaksi & Grafik (Grid 2 Kolom di Desktop, Vertikal di HP) -->
   <!-- bagian list transaksi & Grafik (Grid 2 Kolom di Desktop, Grafik Naik ke Atas di HP) -->
   <section
     :key="selectedView"
     :class="{ 'opacity-50': isLoading, 'transition-opacity': true }"
-    class="grid grid-cols-1 lg:grid-cols-3 gap-8"
   >
-    <!-- Kolom 1 (Grafik) - Menggunakan order-1 (Atas di HP) dan lg:order-2 (Kanan di Desktop) -->
-    <div class="order-1 lg:order-2 lg:col-span-1">
-      <CategoryBreakdown :transactions="transactions" v-model:chartType="activeChartType"/>
-    </div>
-
     <!-- Kolom 2 (Daftar Transaksi) - Menggunakan order-2 (Bawah di HP) dan lg:order-1 (Kiri di Desktop) -->
     <div class="order-2 lg:order-1 lg:col-span-2">
       <div
