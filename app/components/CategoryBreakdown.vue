@@ -8,14 +8,23 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  // Daftarkan model sinkronisasi secara manual sebagai props
+  chartType: {
+    type: String,
+    default: "expense"
+  },
+  activeCategory: {
+    type: String,
+    default: null
+  }
 });
 
-// KONTROL SAKELAR METODE: 'expense' (Belanja) secara default
-const chartType = defineModel("chartType", { default: "expense" });
+// Daftarkan event pemancar perubahan ke parent (dashboard.vue)
+const emit = defineEmits(["update:chartType", "update:activeCategory"]);
 
 // LOGIKA AGREGASI DATA KATEGORI YANG SANGAT DETAIL
 const categorySummary = computed(() => {
-  if (chartType.value === "all") {
+  if (props.chartType === "allocation") {
     const txs = props.transactions || [];
     const incomeTotal = txs
       .filter((t) => t.type?.toLowerCase() === "income")
@@ -54,7 +63,7 @@ const categorySummary = computed(() => {
 
   // Filter transaksi berdasarkan tipe aktif (Belanja / Masuk)
   const filtered = props.transactions.filter(
-    (t) => t.type?.toLowerCase() === chartType.value,
+    (t) => t.type?.toLowerCase() === props.chartType,
   );
 
   // Hitung total nominal keseluruhan untuk perhitungan persentase nanti
@@ -71,7 +80,7 @@ const categorySummary = computed(() => {
       const percent =
         totalAmount === 0 ? 0 : Math.round((amount / totalAmount) * 100);
 
-      // Memberikan warna unik penanda (dot color) untuk setiap kategori
+      // Memberikan rwana unik penanda (dot color) untuk setiap kategori
       const colors = [
         "#3b82f6",
         "#8b5cf6",
@@ -123,6 +132,19 @@ const chartOptions = computed(() => {
             config.dataPointIndex !== -1
           ) {
             activeIndex.value = config.dataPointIndex;
+
+            // Dapatkan nama kategori yang diklik
+            const clickedCategory = categorySummary.value.list[config.dataPointIndex]?.name?.toLowerCase();
+
+            // Jaring pengaman apexcharts: jika selectedDataPoints kosong, artinya user mengklik ulang (deselect)
+            const isDeselected = config.selectedDataPoints[0]?.length === 0;
+
+            if (isDeselected) {
+              emit("update:activeCategory", null); // Reset kategori aktif ke null
+              activeIndex.value = 0; // Reset indeks aktif ke 0
+            } else {
+              emit("update:activeCategory", clickedCategory); // Kirim nama kategori yang diklik ke parent
+            }
           }
         },
       },
@@ -225,7 +247,7 @@ const series = computed(() => categorySummary.value.series);
               ? 'bg-primary-500 text-white shadow-sm'
               : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
           "
-          @click="chartType = 'all'"
+          @click="emit('update:chartType', 'all')"
         >
           Semua
         </button>
@@ -237,7 +259,7 @@ const series = computed(() => categorySummary.value.series);
               ? 'bg-primary-500 text-white shadow-sm'
               : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
           "
-          @click="chartType = 'expense'"
+          @click="emit('update:chartType', 'expense')"
         >
           Pengeluaran
         </button>
@@ -249,7 +271,7 @@ const series = computed(() => categorySummary.value.series);
               ? 'bg-primary-500 text-white shadow-sm'
               : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
           "
-          @click="chartType = 'income'"
+          @click="emit('update:chartType', 'income')"
         >
           Pemasukan
         </button>

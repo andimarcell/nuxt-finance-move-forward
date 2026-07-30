@@ -128,14 +128,20 @@ const cashColor = computed(() => {
 const activeChartType = ref("all");
 
 // Fungsi penyaringan data reaktif berdasarkan tombol aktif di grafik
+// Ubah fungsi filteredGroupByDate agar melakukan penyaringan bertingkat (Tipe & Kategori)
 const filteredGroupByDate = computed(() => {
   let grouped = {};
 
-  // Saring transaksi berdasarkan tombol aktif di grafik (activeChartType)
-  const filtered = transactions.value.filter((transaction) => {
-    if (activeChartType.value === "all") return true;
-    return transaction.type?.toLowerCase() === activeChartType.value;
-  });
+  const filtered = transactions.value.filter(transaction => {
+    // Filter tipe utama (semua, pengeluaran, pemasukan)
+    const matchesType = activeChartType.value === "all" ||
+    transaction.type?.toLowerCase() === activeChartType.value
+
+    // Filter kategori tingkat lanjut (hanya saring jika activeCategory bernilai terisi)
+    const matchesCategory = !activeCategory.value || transaction.category?.toLowerCase() === activeCategory.value
+
+    return matchesType && matchesCategory
+  })
 
   // Kelompokkan hasil filter berdasarkan tanggal
   for (const transaction of filtered) {
@@ -145,6 +151,17 @@ const filteredGroupByDate = computed(() => {
   }
   return grouped;
 });
+
+// State penampung kategori filter aktif dari grafik (default: null)
+const activeCategory = ref(null);
+
+// Watcher untuk menyetel ulang filter kategori menjadi null setiap kali pengguna berpindah tab utama
+watch(selectedView, () => {
+  activeCategory.value = null;
+});
+
+
+
 </script>
 
 <template>
@@ -216,6 +233,7 @@ const filteredGroupByDate = computed(() => {
       <CategoryBreakdown
         :transactions="transactions"
         v-model:chartType="activeChartType"
+        v-model:activeCategory="activeCategory"
       />
     </div>
   </section>
