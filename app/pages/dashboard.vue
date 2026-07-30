@@ -234,6 +234,7 @@ watch(activeChartType, () => {
         :transactions="transactions"
         v-model:chartType="activeChartType"
         v-model:activeCategory="activeCategory"
+        :key="activeChartType"
       />
     </div>
   </section>
