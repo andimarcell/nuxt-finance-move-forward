@@ -132,7 +132,6 @@ const chartOptions = computed(() => {
             config.dataPointIndex !== -1
           ) {
             activeIndex.value = config.dataPointIndex;
-
             // Dapatkan nama kategori yang diklik
             const clickedCategory = categorySummary.value.list[config.dataPointIndex]?.name?.toLowerCase();
 

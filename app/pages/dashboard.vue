@@ -132,18 +132,23 @@ const activeChartType = ref("all");
 const filteredGroupByDate = computed(() => {
   let grouped = {};
 
-  const filtered = transactions.value.filter(transaction => {
-    // Filter tipe utama (semua, pengeluaran, pemasukan)
-    const matchesType = activeChartType.value === "all" ||
-    transaction.type?.toLowerCase() === activeChartType.value
+  const filtered = transactions.value.filter((transaction) => {
+    if (activeChartType.value === "all") {
+      if (activeCategory.value) {
+        const targetType =
+          activeCategory.value === "pemasukan" ? "income" : "expense";
+        return transaction.type?.toLowerCase() === targetType;
+      }
+      return true;
+    }
+    const matchesType =
+      transaction.type?.toLowerCase() === activeChartType.value;
+    const matchesCategory =
+      !activeCategory.value ||
+      transaction.category?.toLowerCase() === activeCategory.value;
 
-    // Filter kategori tingkat lanjut (hanya saring jika activeCategory bernilai terisi)
-    const matchesCategory = !activeCategory.value || transaction.category?.toLowerCase() === activeCategory.value
-
-    return matchesType && matchesCategory
-  })
-
-  // Kelompokkan hasil filter berdasarkan tanggal
+    return matchesType && matchesCategory;
+  });
   for (const transaction of filtered) {
     const date = new Date(transaction.created_at).toISOString().split("T")[0];
     if (!grouped[date]) grouped[date] = [];
@@ -159,9 +164,6 @@ const activeCategory = ref(null);
 watch(activeChartType, () => {
   activeCategory.value = null;
 });
-
-
-
 </script>
 
 <template>
