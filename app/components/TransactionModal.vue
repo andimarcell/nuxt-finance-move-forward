@@ -166,7 +166,7 @@ const fetchUserCategories = async () => {
   try {
     const { data, error } = await supabase
       .from("transactions")
-      .select("category");
+      .select("category, category_icon");
 
     if (error) throw error;
 
@@ -195,7 +195,7 @@ const mergedCategories = computed(() => {
   const mappedCustoms = customCategories.value.map((cat) => ({
     label: cat.charAt(0).toUpperCase() + cat.slice(1),
     value: cat,
-    icon: "i-heroicons-tag", // Ikon tag default keren untuk kategori baru pengguna
+    icon: cat.icon, // Ikon tag default keren untuk kategori baru pengguna
   }));
 
   // Satukan kategori default, kustom, dan pilihan lainnya
