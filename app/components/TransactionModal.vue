@@ -164,26 +164,33 @@ const fetchUserCategories = async () => {
   if (!user.value) return;
 
   try {
+    // Kueri Supabase: Ikut menarik kolom 'category_icon' dari database
     const { data, error } = await supabase
       .from("transactions")
-      .select("category, category_icon");
+      .select("category, category_icon"); // Tarik kedua kolom ini
 
     if (error) throw error;
 
     if (data) {
-      const uniqueCategories = [
-        ...new Set(
-          data
-            .map((t) => (t.category ? t.category.toLowerCase().trim() : ""))
-            .filter(
-              (cat) =>
-                cat !== "" &&
-                !defaultCategories.map((d) => d.value).includes(cat) &&
-                cat !== "lainnya",
-            ),
-        ),
-      ];
-      customCategories.value = uniqueCategories;
+      const uniqueMap = {};
+
+      data.forEach((t) => {
+        const cat = t.category ? t.category.toLowerCase().trim() : "";
+        if (
+          cat &&
+          !defaultCategories.map((d) => d.value).includes(cat) &&
+          cat !== "lainnya"
+        ) {
+          // Petakan nama kategori dengan ikon aslinya dari DB (default: i-heroicons-tag)
+          uniqueMap[cat] = t.category_icon || "i-heroicons-tag";
+        }
+      });
+
+      // Masukkan ke customCategories sebagai array objek { name, icon }
+      customCategories.value = Object.keys(uniqueMap).map((cat) => ({
+        name: cat,
+        icon: uniqueMap[cat],
+      }));
     }
   } catch (err) {
     console.error("Gagal mengambil kategori pengguna:", err.message);
@@ -191,13 +198,12 @@ const fetchUserCategories = async () => {
 };
 
 const mergedCategories = computed(() => {
-  // Petakan kategori kustom dari database menjadi ber-ikon tag
-  const mappedCustoms = customCategories.value.map((cat) => ({
-    label: cat.charAt(0).toUpperCase() + cat.slice(1),
-    value: cat,
-    icon: cat.icon, // Ikon tag default keren untuk kategori baru pengguna
+  // Petakan kategori kustom berdasarkan data objek kustom asli dari DB
+  const mappedCustoms = customCategories.value.map((catObj) => ({
+    label: catObj.name.charAt(0).toUpperCase() + catObj.name.slice(1),
+    value: catObj.name,
+    icon: catObj.icon, // Memakai ikon kustom asli dari DB objek
   }));
-
   // Satukan kategori default, kustom, dan pilihan lainnya
   return [
     ...defaultCategories,
@@ -347,7 +353,18 @@ const customIcon = ref("i-heroicons-tag"); // Ikon kustom default
               content:
                 'w-[var(--radix-select-trigger-width)] min-w-[200px] capitalize',
             }"
-          />
+          >
+            <template #item="{ item }">
+              <div class="flex items-center gap-2">
+                <!-- Merender ikon dinamis di sebelah kiri teks kategori -->
+                <UIcon
+                  :name="item.icon"
+                  class="w-4 h-4 shrink-0 text-gray-500 dark:text-gray-400"
+                />
+                <span>{{ item.label }}</span>
+              </div>
+            </template>
+          </USelectMenu>
         </UFormField>
 
         <UFormField
