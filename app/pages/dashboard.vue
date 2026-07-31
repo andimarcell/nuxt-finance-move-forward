@@ -328,6 +328,7 @@ const categoryFilterItems = computed(() => {
     <div class="order-1 lg:order-2 lg:col-span-1">
       <CategoryBreakdown
         :transactions="transactions"
+        :period="selectedView"
         v-model:chartType="activeChartType"
         v-model:activeCategory="activeCategory"
         :key="activeChartType"

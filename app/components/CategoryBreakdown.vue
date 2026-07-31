@@ -17,6 +17,11 @@ const props = defineProps({
     type: String,
     default: null,
   },
+  // Properti periode baru 
+  period: {
+    type: String,
+    default: "bulanan",
+  },
 });
 
 // Daftarkan event pemancar perubahan ke parent (dashboard.vue)
@@ -253,7 +258,7 @@ const series = computed(() => categorySummary.value.series);
           Distribusi Kategori
         </h3>
         <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-          Pembagian arus kas bulanan berdasarkan kategori
+          Pembagian arus kas {{ props.period }} berdasarkan kategori
         </p>
       </div>
 
