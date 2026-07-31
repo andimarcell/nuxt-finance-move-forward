@@ -80,7 +80,7 @@ const categorySummary = computed(() => {
       const percent =
         totalAmount === 0 ? 0 : Math.round((amount / totalAmount) * 100);
 
-      // Memberikan rwana unik penanda (dot color) untuk setiap kategori
+      // Memberikan warna unik penanda (dot color) untuk setiap kategori
       const colors = [
         "#3b82f6",
         "#8b5cf6",

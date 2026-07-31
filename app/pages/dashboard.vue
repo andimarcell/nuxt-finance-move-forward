@@ -154,9 +154,6 @@ const filteredGroupByDate = computed(() => {
     if (activeCategory.value && activeChartType.value !== "all") {
       return t.category?.toLowerCase() === activeCategory.value;
     }
-    if (selectedCategory.value !== "all") {
-      return t.category?.toLowerCase() === selectedCategory.value;
-    }
     return true;
   });
 
@@ -330,32 +327,24 @@ const categoryFilterItems = [
   </section>
 
   <!-- Filter & sortir kondisonal -->
-  <section class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 ml-1 sm:ml-0">
-    <!-- Dropdown Filter Kategori -->
-    <UFormField label="Saring Kategori">
-      <USelect
-        v-model="selectedCategory"
-        :items="categoryFilterItems"
-        placeholder="Semua Kategori..."
-        class="w-full capitalize cursor-pointer"
-      />
-    </UFormField>
-
-    <!-- Dropdown Urutkan Data -->
-    <UFormField label="Urutkan Berdasarkan">
-      <USelect
-        v-model="sortBy"
-        :items="[
-          { label: 'Tanggal Terbaru', value: 'date_desc' },
-          { label: 'Tanggal Terlama', value: 'date_asc' },
-          { label: 'Nominal Tertinggi', value: 'amount_desc' },
-          { label: 'Nominal Terendah', value: 'amount_asc' },
-        ]"
-        option-attribute="label"
-        value-attribute="value"
-        class="w-full cursor-pointer"
-      />
-    </UFormField>
+  <section class="flex justify-end mb-6 ml-1 sm:ml-0">
+    <div class="w-full sm:w-64">
+      <!-- Dropdown Urutkan Data -->
+      <UFormField label="Urutkan Berdasarkan">
+        <USelect
+          v-model="sortBy"
+          :items="[
+            { label: 'Tanggal Terbaru', value: 'date_desc' },
+            { label: 'Tanggal Terlama', value: 'date_asc' },
+            { label: 'Nominal Tertinggi', value: 'amount_desc' },
+            { label: 'Nominal Terendah', value: 'amount_asc' },
+          ]"
+          option-attribute="label"
+          value-attribute="value"
+          class="w-full cursor-pointer"
+        />
+      </UFormField>
+    </div>
   </section>
   <!-- bagian list transaksi & Grafik (Grid 2 Kolom di Desktop, Grafik Naik ke Atas di HP) -->
   <section
