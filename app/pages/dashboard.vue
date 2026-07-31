@@ -8,6 +8,7 @@ import {
   subMonths,
   subDays,
 } from "date-fns"; // TAMBAHKAN IMPORT INI
+import { id } from "date-fns/locale";
 import { transactionViewsItems } from "~/utils/constants";
 
 const selectedView = ref(transactionViewsItems[1]);
@@ -82,10 +83,10 @@ const prevPeriod = () => {
 // Judul dinamis untuk navigasi (Misal: "May 2026" atau "2025")
 const periodLabel = computed(() => {
   if (selectedView.value === "tahunan")
-    return format(referenceDate.value, "yyyy");
+    return format(referenceDate.value, "yyyy", { locale: id });
   if (selectedView.value === "bulanan")
-    return format(referenceDate.value, "MMMM yyyy");
-  return format(referenceDate.value, "d MMMM yyyy");
+    return format(referenceDate.value, "MMMM yyyy", { locale: id });
+  return format(referenceDate.value, "d MMMM yyyy", { locale: id });
 });
 
 // Menentukan apakah kondisi keuangan sedang "Tekor" (Defisit)
@@ -253,10 +254,7 @@ const categoryFilterItems = computed(() => {
     }
   });
 
-  return [
-    ...defaultItems,
-    ...customItems,
-  ];
+  return [...defaultItems, ...customItems];
 });
 </script>
 
