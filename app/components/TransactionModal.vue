@@ -122,7 +122,7 @@ const schema = z.object({
   description: z.string().min(1, "Keterangan wajib diisi"),
   amount: z.number().positive("Nominal harus lebih dari 0"),
   type: z.enum(["income", "expense"]),
-  category: z.string().min(1, "Kategori wajib dipilih"), // Validasi kolom kategori
+  category: z.any(), // Validasi kolom kategori // Mengizinkan string maupun objek agar tidak crash
   created_at: z.string().min(1, "Tanggal wajib diisi"),
 });
 
@@ -236,8 +236,17 @@ async function onSubmit(event) {
     let error;
 
     const payload = { ...state };
-    if (state.category === "lainnya" && customCategory.value) {
-      payload.category = customCategory.value.toLowerCase().trim(); // Gunakan kategori kustom yang dimasukkan pengguna
+    // Ekstraksi Aman: Ambil string value dari objek kategori Nuxt UI
+    if (state.category && typeof state.category === "object") {
+      payload.category = state.category.value;
+    } else {
+      payload.category = state.category;
+    }
+
+    // Jika memilih 'lainnya', gunakan ketikan kustom & simpan ikon kustom pilihan mereka
+    if (payload.category === "lainnya" && customCategory.value) {
+      payload.category = customCategory.value.toLowerCase().trim();
+      payload.category_icon = customIcon.value; // SIMPAN IKON KUSTOM KE KOLOM BARU DATABASE
     }
 
     if (isEditing.value) {
@@ -276,6 +285,33 @@ async function onSubmit(event) {
     isLoading.value = false;
   }
 }
+
+// Pilihan ikon-ikon indah yang bisa dipilih mandiri oleh pengguna
+const iconOptions = [
+  { label: "Tag", value: "i-heroicons-tag", icon: "i-heroicons-tag" },
+  {
+    label: "Tas",
+    value: "i-heroicons-shopping-bag",
+    icon: "i-heroicons-shopping-bag",
+  },
+  {
+    label: "Makanan",
+    value: "i-heroicons-sparkles",
+    icon: "i-heroicons-sparkles",
+  },
+  { label: "Hati", value: "i-heroicons-heart", icon: "i-heroicons-heart" },
+  {
+    label: "Game",
+    value: "i-heroicons-puzzle-piece",
+    icon: "i-heroicons-puzzle-piece",
+  },
+  {
+    label: "Roket",
+    value: "i-heroicons-rocket-launch",
+    icon: "i-heroicons-rocket-launch",
+  },
+];
+const customIcon = ref("i-heroicons-tag"); // Ikon kustom default
 </script>
 
 <template>
@@ -324,6 +360,44 @@ async function onSubmit(event) {
           />
         </UFormField>
 
+        <!-- PILIHAN IKON KUSTOM -->
+        <UFormField
+          v-if="state.category === 'lainnya'"
+          label="Pilih Ikon Kategori Baru"
+          required
+        >
+          <USelectMenu
+            v-model="customIcon"
+            :items="iconOptions"
+            value-attribute="value"
+            option-attribute="label"
+            class="w-full cursor-pointer"
+          >
+            <!-- Kustomisasi item di dalam dropdown agar HANYA menampilkan gambar ikon besar -->
+            <template #item="{ item }">
+              <div class="flex justify-center w-full py-1">
+                <UIcon
+                  :name="item.icon"
+                  class="w-6 h-6 text-gray-700 dark:text-gray-300"
+                />
+              </div>
+            </template>
+
+            <!-- Kustomisasi tombol luar utama agar menampilkan ikon yang sedang terpilih -->
+            <template #default>
+              <UButton
+                color="neutral"
+                variant="subtle"
+                class="w-full justify-between cursor-pointer"
+              >
+                <div class="flex items-center gap-2">
+                  <UIcon :name="customIcon" class="w-5 h-5 text-primary" />
+                  <span class="text-xs text-gray-500">Ikon Terpilih</span>
+                </div>
+              </UButton>
+            </template>
+          </USelectMenu>
+        </UFormField>
         <div v-if="isCategoryFilled" class="space-y-4">
           <UFormField label="Keterangan" name="description" v-slot="{ error }">
             <textarea
