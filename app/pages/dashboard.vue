@@ -295,7 +295,7 @@ const categoryFilterItems = [
   </section>
   <!-- bagian header transaction-->
   <section
-    class="flex flex-col sm:flex-row ml-1 sm:ml-0 justify-between mb-6 sm:mb-10 gap-2"
+    class="flex flex-col sm:flex-row ml-1 sm:ml-0 justify-between mb-6 sm:mb-10 gap-2 mt-5"
   >
     <div>
       <h2 class="text-xl sm:text-2xl font-extrabold">Transaksi</h2>
