@@ -17,13 +17,33 @@ const props = defineProps({
     type: String,
     default: null,
   },
-  // Properti periode baru 
+  // Properti periode baru
   period: {
     type: String,
     default: "bulanan",
   },
+  // Properti label periode
+  periodLabel: {
+    type: String,
+    default: "",
+  },
 });
+// Mengatur tata bahasa subjudul grafik secara dinamis mengikuti filter kalender aktif
+const formattedSubtitle = computed(() => {
+  const label = props.periodLabel;
+  if (!label) return "";
 
+  if (props.period === "tahunan") {
+    // Menghasilkan: "tahun 2026"
+    return `tahun ${label}`;
+  }
+  if (props.period === "harian") {
+    // Menghasilkan: "tanggal 1 July 2026"
+    return `tanggal ${label}`;
+  }
+  // Menghasilkan: "bulan July 2026"
+  return `bulan ${label}`;
+});
 // Daftarkan event pemancar perubahan ke parent (dashboard.vue)
 const emit = defineEmits(["update:chartType", "update:activeCategory"]);
 
@@ -258,7 +278,7 @@ const series = computed(() => categorySummary.value.series);
           Distribusi Kategori
         </h3>
         <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-          Pembagian arus kas {{ props.period }} berdasarkan kategori
+          Pembagian arus kas {{ formattedSubtitle }} berdasarkan kategori
         </p>
       </div>
 

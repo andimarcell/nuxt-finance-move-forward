@@ -329,6 +329,7 @@ const categoryFilterItems = computed(() => {
       <CategoryBreakdown
         :transactions="transactions"
         :period="selectedView"
+        :periodLabel="periodLabel"
         v-model:chartType="activeChartType"
         v-model:activeCategory="activeCategory"
         :key="activeChartType"
