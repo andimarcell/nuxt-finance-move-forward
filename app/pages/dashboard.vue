@@ -212,16 +212,52 @@ const activeTotalAmount = computed(() => {
 
 // Memproses penyaringan daftar kategori
 // Menggunakan daftar kategori filter statis
-const categoryFilterItems = [
-  "all",
-  "gaji",
-  "bonus",
-  "transportasi",
-  "hiburan",
-  "pendidikan",
-  "bulanan",
-  "lainnya",
-];
+// Mengolah daftar kategori filter secara dinamis & asinkronus lengkap dengan ikon aslinya dari DB
+const categoryFilterItems = computed(() => {
+  const defaultItems = [
+    { label: "Semua Kategori", value: "all", icon: "i-heroicons-squares-2x2" },
+    { label: "Gaji", value: "gaji", icon: "i-heroicons-banknotes" },
+    { label: "Bonus", value: "bonus", icon: "i-heroicons-gift" },
+    { label: "Transportasi", value: "transportasi", icon: "i-heroicons-truck" },
+    { label: "Hiburan", value: "hiburan", icon: "i-heroicons-ticket" },
+    {
+      label: "Pendidikan",
+      value: "pendidikan",
+      icon: "i-heroicons-academic-cap",
+    },
+    { label: "Bulanan", value: "bulanan", icon: "i-heroicons-calendar-days" },
+  ];
+
+  const defaultValues = defaultItems.map((d) => d.value);
+  const customItems = [];
+  const uniqueCustomNames = new Set();
+
+  // Ambil dan petakan ikon kustom asli dari transaksi yang aktif saat ini di dashboard
+  const txs = transactions.value || [];
+  txs.forEach((t) => {
+    const cat = t.category?.toLowerCase()?.trim() || "";
+    if (
+      cat &&
+      !defaultValues.includes(cat) &&
+      cat !== "all" &&
+      cat !== "lainnya"
+    ) {
+      if (!uniqueCustomNames.has(cat)) {
+        uniqueCustomNames.add(cat);
+        customItems.push({
+          label: cat.charAt(0).toUpperCase() + cat.slice(1),
+          value: cat,
+          icon: t.category_icon || "i-heroicons-tag", // Ambil ikon kustom asli dari DB!
+        });
+      }
+    }
+  });
+
+  return [
+    ...defaultItems,
+    ...customItems,
+  ];
+});
 </script>
 
 <template>
@@ -334,14 +370,32 @@ const categoryFilterItems = [
   <!-- Filter & sortir kondisonal -->
   <section class="flex justify-center sm:justify-end mb-6 ml-1 sm:ml-0 gap-2">
     <!-- Dropdown Saring Kategori -->
-    <div class="w-full max-w-42 sm:w-64 ">
+    <div class="w-full max-w-42 sm:w-64">
       <UFormField label="Saring Kategori">
-        <USelect
+        <USelectMenu
           v-model="selectedCategory"
           :items="categoryFilterItems"
+          value-attribute="value"
+          option-attribute="label"
           placeholder="Semua Kategori..."
           class="w-full capitalize cursor-pointer"
-        />
+          :ui="{
+            trigger: 'capitalize',
+            content:
+              'w-[var(--radix-select-trigger-width)] min-w-[200px] capitalize',
+          }"
+        >
+          <!-- Slot kustom untuk merender gambar ikon di sebelah kiri nama kategori -->
+          <template #item="{ item }">
+            <div class="flex items-center gap-2">
+              <UIcon
+                :name="item.icon"
+                class="w-4 h-4 shrink-0 text-gray-500 dark:text-gray-400"
+              />
+              <span>{{ item.label }}</span>
+            </div>
+          </template>
+        </USelectMenu>
       </UFormField>
     </div>
     <div class="w-full max-w-42 sm:w-64">
