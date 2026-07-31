@@ -366,37 +366,31 @@ const customIcon = ref("i-heroicons-tag"); // Ikon kustom default
           label="Pilih Ikon Kategori Baru"
           required
         >
-          <USelectMenu
-            v-model="customIcon"
-            :items="iconOptions"
-            value-attribute="value"
-            option-attribute="label"
-            class="w-full cursor-pointer"
-          >
-            <!-- Kustomisasi item di dalam dropdown agar HANYA menampilkan gambar ikon besar -->
-            <template #item="{ item }">
-              <div class="flex justify-center w-full py-1">
-                <UIcon
-                  :name="item.icon"
-                  class="w-6 h-6 text-gray-700 dark:text-gray-300"
-                />
-              </div>
-            </template>
-
-            <!-- Kustomisasi tombol luar utama agar menampilkan ikon yang sedang terpilih -->
-            <template #default>
-              <UButton
-                color="neutral"
-                variant="subtle"
-                class="w-full justify-between cursor-pointer"
-              >
-                <div class="flex items-center gap-2">
-                  <UIcon :name="customIcon" class="w-5 h-5 text-primary" />
-                  <span class="text-xs text-gray-500">Ikon Terpilih</span>
-                </div>
-              </UButton>
-            </template>
-          </USelectMenu>
+          <!-- Tombol Bulat Row Interaktif murni menggunakan div -->
+          <div class="flex items-center gap-3 mt-1.5 flex-wrap">
+            <button
+              v-for="opt in iconOptions"
+              :key="opt.value"
+              type="button"
+              class="w-10 h-10 rounded-full flex items-center justify-center border transition-all duration-150 cursor-pointer"
+              :class="
+                customIcon === opt.value
+                  ? 'border-primary-500 bg-primary-500/10 ring-2 ring-primary-500/50'
+                  : 'border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-800'
+              "
+              @click="customIcon = opt.value"
+            >
+              <UIcon
+                :name="opt.icon"
+                class="w-5 h-5 transition-colors duration-150"
+                :class="
+                  customIcon === opt.value
+                    ? 'text-primary'
+                    : 'text-gray-400 dark:text-gray-500'
+                "
+              />
+            </button>
+          </div>
         </UFormField>
         <div v-if="isCategoryFilled" class="space-y-4">
           <UFormField label="Keterangan" name="description" v-slot="{ error }">
