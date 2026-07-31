@@ -22,13 +22,30 @@ const amountComputed = computed(() => props.transaction.amount);
 const { currency: amount } = useCurrency(amountComputed);
 
 const isIncome = computed(() => props.transaction.type === "income");
+const defaultIcons = {
+  gaji: "i-heroicons-banknotes",
+  bonus: "i-heroicons-gift",
+  transportasi: "i-heroicons-truck",
+  hiburan: "i-heroicons-ticket",
+  pendidikan: "i-heroicons-academic-cap",
+  bulanan: "i-heroicons-calendar-days"
+}
 const icon = computed(() => {
-  if (isIncome.value) {
-    return "i-heroicons-arrow-up-right";
-  } else {
-    return "i-heroicons-arrow-down-left";
+  const cat = props.transaction.category?.toLowerCase() || ""
+  
+  // 1. Jika ada ikon kustom tersimpan di database, gunakan itu!
+  if (props.transaction.category_icon) {
+    return props.transaction.category_icon
   }
-});
+  
+  // 2. Jika tidak ada, cek apakah masuk kategori bawaan (default)
+  if (defaultIcons[cat]) {
+    return defaultIcons[cat]
+  }
+
+  // 3. Jika benar-benar kosong, gunakan ikon penanda tag default
+  return "i-heroicons-tag"
+})
 
 const iconColor = computed(() => {
   if (isIncome.value) {

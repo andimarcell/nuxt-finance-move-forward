@@ -11,12 +11,12 @@ const props = defineProps({
   // Daftarkan model sinkronisasi secara manual sebagai props
   chartType: {
     type: String,
-    default: "expense"
+    default: "expense",
   },
   activeCategory: {
     type: String,
-    default: null
-  }
+    default: null,
+  },
 });
 
 // Daftarkan event pemancar perubahan ke parent (dashboard.vue)
@@ -80,6 +80,25 @@ const categorySummary = computed(() => {
       const percent =
         totalAmount === 0 ? 0 : Math.round((amount / totalAmount) * 100);
 
+      // Cari apakah ada transaksi dalam grup kategori ini yang memiliki ikon kustom di DB
+      const matchingTx = filtered.find(
+        (t) => t.category?.toLowerCase() === cat && t.category_icon,
+      );
+      const savedIcon = matchingTx ? matchingTx.category_icon : null;
+
+      // 2. Map daftar ikon bawaan
+      const defaultIcons = {
+        gaji: "i-heroicons-banknotes",
+        bonus: "i-heroicons-gift",
+        transportasi: "i-heroicons-truck",
+        hiburan: "i-heroicons-ticket",
+        pendidikan: "i-heroicons-academic-cap",
+        bulanan: "i-heroicons-calendar-days",
+      };
+
+      // 3. Gunakan ikon kustom DB, jika kosong gunakan ikon default, jika kosong lagi gunakan tag
+      const icon = savedIcon || defaultIcons[cat] || "i-heroicons-tag";
+
       // Memberikan warna unik penanda (dot color) untuk setiap kategori
       const colors = [
         "#3b82f6",
@@ -94,7 +113,8 @@ const categorySummary = computed(() => {
         name: cat.charAt(0).toUpperCase() + cat.slice(1),
         amount: amount,
         percent: `${percent}%`,
-        color: colors[index % colors.length], // Loop warna jika kategori melebihi jatah warna
+        color: colors[index % colors.length],
+        icon: icon, // 👈 Kirim data ikon dinamis ke template
       };
     })
     .sort((a, b) => b.amount - a.amount); // Urutkan dari pengeluaran terbesar ke terkecil
@@ -133,7 +153,10 @@ const chartOptions = computed(() => {
           ) {
             activeIndex.value = config.dataPointIndex;
             // Dapatkan nama kategori yang diklik
-            const clickedCategory = categorySummary.value.list[config.dataPointIndex]?.name?.toLowerCase();
+            const clickedCategory =
+              categorySummary.value.list[
+                config.dataPointIndex
+              ]?.name?.toLowerCase();
 
             // Jaring pengaman apexcharts: jika selectedDataPoints kosong, artinya user mengklik ulang (deselect)
             const isDeselected = config.selectedDataPoints[0]?.length === 0;
@@ -323,10 +346,11 @@ const series = computed(() => categorySummary.value.series);
         >
           <!-- Baris 1: Titik Warna + Nama Kategori -->
           <div class="flex items-center space-x-2">
-            <span
-              class="w-2 h-2 rounded-full shrink-0"
-              :style="{ backgroundColor: item.color }"
-            ></span>
+            <UIcon
+              :name="item.icon"
+              class="w-4 h-4 shrink-0"
+              :style="{ color: item.color }"
+            />
             <span
               class="text-xs font-bold text-gray-900 dark:text-white truncate max-w-22.5 capitalize"
             >

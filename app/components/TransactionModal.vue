@@ -42,7 +42,11 @@ const isModalOpen = computed({
 });
 
 const isEditing = computed(() => !!props.transaction);
-
+// Fungsi pembantu mengekstrak string murni dari objek Nuxt UI
+const getCategoryValue = (cat) => {
+  if (cat && typeof cat === "object") return cat.value;
+  return cat;
+};
 const autoResize = () => {
   const el = textareaRef.value;
   if (!el) return;
@@ -132,6 +136,7 @@ const state = reactive({
   amount: 0,
   type: "income",
   category: "", // State penampung kategori terpilih
+  category_icon: "",
   created_at: format(new Date(), "yyyy-MM-dd"),
 });
 
@@ -209,12 +214,10 @@ const mergedCategories = computed(() => {
 const isCategoryFilled = computed(() => {
   // Jika ketegori belum dipilih sama sekali, jangan muncuulkan apa-apa
   if (!state.category) return false;
-
   // Jika pilih "lainnya", wajib ketik minimal 3 karakter (1 kata) baru boleh muncul kolom lain
   if (state.category === "lainnya") {
     return customCategory.value.trim().length >= 4;
   }
-
   // Jika memilih kategori default lainnya, langsung munculkan kolom lain
   return true;
 });
@@ -348,7 +351,7 @@ const customIcon = ref("i-heroicons-tag"); // Ikon kustom default
         </UFormField>
 
         <UFormField
-          v-if="state.category === 'lainnya'"
+          v-if="getCategoryValue(state.category) === 'lainnya'"
           label="Nama Kategori Baru"
           required
         >
@@ -362,7 +365,7 @@ const customIcon = ref("i-heroicons-tag"); // Ikon kustom default
 
         <!-- PILIHAN IKON KUSTOM -->
         <UFormField
-          v-if="state.category === 'lainnya'"
+          v-if="getCategoryValue(state.category) === 'lainnya'"
           label="Pilih Ikon Kategori Baru"
           required
         >
