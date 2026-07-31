@@ -88,8 +88,8 @@ const logout = async () => {
 <template>
   <header class="flex items-center justify-between mt-10">
     <!-- klik logo/nama otomatis mengarah ke halaman ("/") -->
-    <NuxtLink to="/" class="flex items-center gap-1.5 sm:gap-2 hove:opacity-80 transition shrink-0">
-      <img src="/favicon.ico" class="w-6 h-6 sm:w-8 sm:h-8 rounded-md" /><span class="text-2xl font-bold">FTracker</span></NuxtLink>
+    <NuxtLink to="/" class="flex items-center gap-1.5 sm:gap-2 hover:opacity-80 transition shrink-0">
+      <img src="/favicon.ico" class="w-8 h-8 sm:w-10 sm:h-10 rounded-md" /><span class="text-3xl font-extrabold">FTracker</span></NuxtLink>
     <ClientOnly>
       <div v-if="user" class="flex items-center gap-2 sm:gap-4">
         <!-- tombol dinamis: hanya muncul jika user sudah login, tapi sedang tidak berada di halaman /dashboard-->
@@ -107,6 +107,7 @@ const logout = async () => {
           <UAvatar
             v-bind="avatarProps"
             :alt="user.email"
+            size="xl"
             class="cursor-pointer"
           />
           <!-- Slot khusus untuk menampilkan email user di dropdown -->
