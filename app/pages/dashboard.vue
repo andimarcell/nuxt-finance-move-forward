@@ -327,8 +327,8 @@ const categoryFilterItems = [
   </section>
 
   <!-- Filter & sortir kondisonal -->
-  <section class="flex justify-end mb-6 ml-1 sm:ml-0">
-    <div class="w-full sm:w-64">
+  <section class="flex justify-center sm:justify-end mb-6 ml-1 sm:ml-0">
+    <div class="w-full max-w-42 sm:w-64">
       <!-- Dropdown Urutkan Data -->
       <UFormField label="Urutkan Berdasarkan">
         <USelect
