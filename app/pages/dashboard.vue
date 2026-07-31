@@ -154,6 +154,10 @@ const filteredGroupByDate = computed(() => {
     if (activeCategory.value && activeChartType.value !== "all") {
       return t.category?.toLowerCase() === activeCategory.value;
     }
+    // KONDISI CADANGAN DROPDOWN
+    if (selectedCategory.value !== "all") {
+      return transaction.category?.toLowerCase() === selectedCategory.value;
+    }
     return true;
   });
 
@@ -186,6 +190,7 @@ const activeCategory = ref(null);
 // Watcher untuk menyetel ulang filter kategori menjadi null setiap kali pengguna berpindah tab utama
 watch(activeChartType, () => {
   activeCategory.value = null;
+  selectedCategory.value = "all";
 });
 
 // State filter kategori manual dan metode pengurutan data harian
@@ -327,7 +332,18 @@ const categoryFilterItems = [
   </section>
 
   <!-- Filter & sortir kondisonal -->
-  <section class="flex justify-center sm:justify-end mb-6 ml-1 sm:ml-0">
+  <section class="flex justify-center sm:justify-end mb-6 ml-1 sm:ml-0 gap-2">
+    <!-- Dropdown Saring Kategori -->
+    <div class="w-full max-w-42 sm:w-64 ">
+      <UFormField label="Saring Kategori">
+        <USelect
+          v-model="selectedCategory"
+          :items="categoryFilterItems"
+          placeholder="Semua Kategori..."
+          class="w-full capitalize cursor-pointer"
+        />
+      </UFormField>
+    </div>
     <div class="w-full max-w-42 sm:w-64">
       <!-- Dropdown Urutkan Data -->
       <UFormField label="Urutkan Berdasarkan">
