@@ -80,7 +80,7 @@ const fillForm = () => {
     state.created_at = props.transaction.created_at.split("T")[0];
     const originalCategory = props.transaction.category?.toLowerCase() || "";
     if (
-      mergedCategories.value.includes(originalCategory) &&
+      defaultCategories.map((d) => d.value).includes(originalCategory) &&
       originalCategory !== "lainnya"
     ) {
       state.category = originalCategory;
@@ -137,12 +137,16 @@ const state = reactive({
 
 // Daftar pilihan kategori untuk diisi di dropdown UI
 const defaultCategories = [
-  "gaji",
-  "bonus",
-  "transportasi",
-  "hiburan",
-  "pendidikan",
-  "bulanan",
+  { label: "Gaji", value: "gaji", icon: "i-heroicons-banknotes" },
+  { label: "Bonus", value: "bonus", icon: "i-heroicons-gift" },
+  { label: "Transportasi", value: "transportasi", icon: "i-heroicons-truck" },
+  { label: "Hiburan", value: "hiburan", icon: "i-heroicons-ticket" },
+  {
+    label: "Pendidikan",
+    value: "pendidikan",
+    icon: "i-heroicons-academic-cap",
+  },
+  { label: "Bulanan", value: "bulanan", icon: "i-heroicons-calendar-days" },
 ];
 const customCategory = ref(""); // State untuk kategori kustom yang dimasukkan pengguna
 const customCategories = ref([]); // State untuk kategori kustom yang diambil dari database
@@ -169,7 +173,7 @@ const fetchUserCategories = async () => {
             .filter(
               (cat) =>
                 cat !== "" &&
-                !defaultCategories.includes(cat) &&
+                !defaultCategories.map((d) => d.value).includes(cat) &&
                 cat !== "lainnya",
             ),
         ),
@@ -182,17 +186,23 @@ const fetchUserCategories = async () => {
 };
 
 const mergedCategories = computed(() => {
-  const combined = [...defaultCategories, ...customCategories.value];
-  return [...new Set(combined), "lainnya"];
-});
+  // Petakan kategori kustom dari database menjadi ber-ikon tag
+  const mappedCustoms = customCategories.value.map((cat) => ({
+    label: cat.charAt(0).toUpperCase() + cat.slice(1),
+    value: cat,
+    icon: "i-heroicons-tag", // Ikon tag default keren untuk kategori baru pengguna
+  }));
 
-const isCategorySelected = computed(() => {
-  if (!state.category) return false;
-
-  if (state.category === "lainnya") {
-    return !!customCategory.value.trim();
-  }
-  return true;
+  // Satukan kategori default, kustom, dan pilihan lainnya
+  return [
+    ...defaultCategories,
+    ...mappedCustoms,
+    {
+      label: "Lainnya",
+      value: "lainnya",
+      icon: "i-heroicons-ellipsis-horizontal",
+    },
+  ];
 });
 
 // Mengontrol kapan sisa kolom input lainnya boleh muncul di layar
@@ -289,6 +299,8 @@ async function onSubmit(event) {
           <USelectMenu
             v-model="state.category"
             :items="mergedCategories"
+            value-attribute="value"
+            option-attribute="label"
             placeholder="Pilih kategori transaksi..."
             class="w-full capitalize cursor-pointer"
             :ui="{
@@ -331,7 +343,11 @@ async function onSubmit(event) {
 
           <!-- Input Nominal -->
           <UFormField label="Nominal" name="amount">
-            <UInput v-model.number="state.amount" type="number" class="w-full" />
+            <UInput
+              v-model.number="state.amount"
+              type="number"
+              class="w-full"
+            />
 
             <div
               v-if="isOverBudget"
