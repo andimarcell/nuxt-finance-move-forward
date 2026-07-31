@@ -129,10 +129,15 @@ const activeChartType = ref("all");
 
 // Fungsi penyaringan data reaktif berdasarkan tombol aktif di grafik
 // Ubah fungsi filteredGroupByDate agar melakukan penyaringan bertingkat (Tipe & Kategori)
+// Ganti total fungsi computed
 const filteredGroupByDate = computed(() => {
   let grouped = {};
 
-  const filtered = transactions.value.filter((transaction) => {
+  // Jaring pengaman memastikan 'txs' selalu berupa array (tidak null/undefined) saat pertama dimuat
+  const txs = transactions.value || [];
+
+  // A. Filter Tipe Utama (Semua, Pengeluaran, Pemasukan) berdasarkan tab grafik aktif
+  let filtered = txs.filter((transaction) => {
     if (activeChartType.value === "all") {
       if (activeCategory.value) {
         const targetType =
@@ -141,14 +146,35 @@ const filteredGroupByDate = computed(() => {
       }
       return true;
     }
-    const matchesType =
-      transaction.type?.toLowerCase() === activeChartType.value;
-    const matchesCategory =
-      !activeCategory.value ||
-      transaction.category?.toLowerCase() === activeCategory.value;
-
-    return matchesType && matchesCategory;
+    return transaction.type?.toLowerCase() === activeChartType.value;
   });
+
+  // B. Filter Kategori Tingkat Lanjut (Prioritas klik grafik, cadangan dropdown list)
+  filtered = filtered.filter((t) => {
+    if (activeCategory.value && activeChartType.value !== "all") {
+      return t.category?.toLowerCase() === activeCategory.value;
+    }
+    if (selectedCategory.value !== "all") {
+      return t.category?.toLowerCase() === selectedCategory.value;
+    }
+    return true;
+  });
+
+  // C. Sinkronisasi pengurutan data secara presisi (Tanggal & Nominal)
+  filtered.sort((a, b) => {
+    const dateA = new Date(a.created_at).getTime();
+    const dateB = new Date(b.created_at).getTime();
+    const amountA = Number(a.amount);
+    const amountB = Number(b.amount);
+
+    if (sortBy.value === "date_desc") return dateB - dateA;
+    if (sortBy.value === "date_asc") return dateA - dateB;
+    if (sortBy.value === "amount_desc") return amountB - amountA;
+    if (sortBy.value === "amount_asc") return amountA - amountB;
+    return 0;
+  });
+
+  // D. Kelompokkan hasil akhir yang sudah steril ke dalam tanggal harian
   for (const transaction of filtered) {
     const date = new Date(transaction.created_at).toISOString().split("T")[0];
     if (!grouped[date]) grouped[date] = [];
@@ -164,6 +190,36 @@ const activeCategory = ref(null);
 watch(activeChartType, () => {
   activeCategory.value = null;
 });
+
+// State filter kategori manual dan metode pengurutan data harian
+const selectedCategory = ref("all");
+const sortBy = ref("date_desc"); // Default: Tanggal terbaru ke terlama
+
+// Watcher tambahan untuk meriset filter kategori manual jika tombol tab utama grafik berpindah
+watch(activeChartType, () => {
+  activeCategory.value = null;
+  selectedCategory.value = "all"; // Reset filter list harian
+});
+
+// Menghitung total nominal aktif untuk dikirim ke masing-masing progress bar
+const activeTotalAmount = computed(() => {
+  if (activeChartType.value === "income") return incomeTotal.value;
+  if (activeChartType.value === "expense") return expenseTotal.value;
+  return incomeTotal.value + expenseTotal.value; // Jika "Semua", totalnya adalah Pemasukan + Pengeluaran
+});
+
+// Memproses penyaringan daftar kategori
+// Menggunakan daftar kategori filter statis
+const categoryFilterItems = [
+  "all",
+  "gaji",
+  "bonus",
+  "transportasi",
+  "hiburan",
+  "pendidikan",
+  "bulanan",
+  "lainnya",
+];
 </script>
 
 <template>
@@ -273,6 +329,34 @@ watch(activeChartType, () => {
     </div>
   </section>
 
+  <!-- Filter & sortir kondisonal -->
+  <section class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 ml-1 sm:ml-0">
+    <!-- Dropdown Filter Kategori -->
+    <UFormField label="Saring Kategori">
+      <USelect
+        v-model="selectedCategory"
+        :items="categoryFilterItems"
+        placeholder="Semua Kategori..."
+        class="w-full capitalize cursor-pointer"
+      />
+    </UFormField>
+
+    <!-- Dropdown Urutkan Data -->
+    <UFormField label="Urutkan Berdasarkan">
+      <USelect
+        v-model="sortBy"
+        :items="[
+          { label: 'Tanggal Terbaru', value: 'date_desc' },
+          { label: 'Tanggal Terlama', value: 'date_asc' },
+          { label: 'Nominal Tertinggi', value: 'amount_desc' },
+          { label: 'Nominal Terendah', value: 'amount_asc' },
+        ]"
+        option-attribute="label"
+        value-attribute="value"
+        class="w-full cursor-pointer"
+      />
+    </UFormField>
+  </section>
   <!-- bagian list transaksi & Grafik (Grid 2 Kolom di Desktop, Grafik Naik ke Atas di HP) -->
   <section
     :key="selectedView"
@@ -292,6 +376,7 @@ watch(activeChartType, () => {
           v-for="(transaction, index) in transactionOnDay"
           :key="index"
           :transaction="transaction"
+          :totalAmount="activeTotalAmount"
           @edit="onEditClick(transaction)"
           @delete="refreshAll()"
         />

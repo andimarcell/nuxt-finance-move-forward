@@ -3,8 +3,20 @@ import { computed } from "vue";
 
 const props = defineProps({
   transaction: Object,
+  // Properti totalAmount
+  totalAmount: {
+    type: Number,
+    default: 1, // Untuk menghindari pembagian dengan angka 0
+  },
 });
 const emit = defineEmits(["delete", "edit"]);
+
+// Fungsi penghitung persentase bar secara presisi
+const percentOfTotal = computed(() => {
+  if (!props.totalAmount || props.totalAmount === 0) return 0;
+  const ratio = (props.transaction.amount / props.totalAmount) * 100;
+  return Math.round(ratio);
+});
 
 const amountComputed = computed(() => props.transaction.amount);
 const { currency: amount } = useCurrency(amountComputed);
@@ -109,6 +121,16 @@ const actions = [
             </div>
           </UTooltip>
 
+          <!-- Progress bar -->
+          <div
+            class="w-full bg-gray-100 dark:bg-gray-800 h-1.5 rounded-full overflow-hidden mt-2 max-w-50 sm:max-w-xs"
+          >
+            <div
+              class="h-full rounded-full transition-all duration-300"
+              :class="isIncome ? 'bg-green-500' : 'bg-red-500'"
+              :style="{ width: `${percentOfTotal}%` }"
+            ></div>
+          </div>
           <!-- Badge Khusus HP (Muncul di bawah deskripsi) -->
           <div class="mt-1 block sm:hidden">
             <UBadge
