@@ -107,14 +107,14 @@ const ctaLabel = computed(() => {
       >
         <!-- BAGIAN 1: Ringkasan & Chart (Atas) -->
         <img
-          src="/preview-mobile.jpg"
+          src="/wowo.jpeg"
           alt="Preview Dashboard FTracker Mobile Top"
           class="w-full object-cover object-top"
         />
 
         <!-- BAGIAN 2: Daftar Transaksi (Bawah) -->
         <img
-          src="/preview-mobile-list.jpg"
+          src="/gamteng.jpeg"
           alt="Preview Dashboard FTracker Mobile Bottom"
           class="w-full object-cover object-top -mt-1"
         />
