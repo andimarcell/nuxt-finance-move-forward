@@ -82,7 +82,7 @@ const ctaLabel = computed(() => {
         class="bg-white dark:bg-gray-950 aspect-video flex flex-col items-center justify-center relative"
       >
         <img
-          src="/preview-laptop.png"
+          src="/preview-laptop-baru.png"
           alt="Preview Dashboard FTracker"
           class="w-full h-full object-cover object-top opacity-90 hover:opacity-100 transition-opacity duration-300"
         />
@@ -107,14 +107,14 @@ const ctaLabel = computed(() => {
       >
         <!-- BAGIAN 1: Ringkasan & Chart (Atas) -->
         <img
-          src="/wowo.jpeg"
+          src="/preview-mobile.jpg"
           alt="Preview Dashboard FTracker Mobile Top"
           class="w-full object-cover object-top"
         />
 
         <!-- BAGIAN 2: Daftar Transaksi (Bawah) -->
         <img
-          src="/gamteng.jpeg"
+          src="/preview-mobile-list.jpg"
           alt="Preview Dashboard FTracker Mobile Bottom"
           class="w-full object-cover object-top -mt-1"
         />
