@@ -103,16 +103,29 @@ const ctaLabel = computed(() => {
       <div
         class="w-full h-full pt-4 bg-gray-50 dark:bg-gray-950 overflow-y-auto no-scrollbar scroll-smooth"
       >
-        <!-- BAGIAN 1: Ringkasan & Chart (Atas) -->
+        <!-- BAGIAN 1: Ringkasan -->
         <img
-          src="/mobile-lama.jpg"
+          src="/mobile-baru.jpeg"
           alt="Preview Dashboard FTracker Mobile Top"
           class="w-full object-cover object-top"
         />
 
-        <!-- BAGIAN 2: Daftar Transaksi (Bawah) -->
+        <!-- BAGIAN 2: Chart-->
         <img
-          src="/mobile-list-lama.jpg"
+          src="/mobile-chart-baru.jpeg"
+          alt="Preview Dashboard FTracker Mobile Bottom"
+          class="w-full object-cover object-top -mt-1"
+        />
+        <!-- BAGIAN 3: Filter-->
+        <img
+          src="/mobile-filter-baru.jpeg"
+          alt="Preview Dashboard FTracker Mobile Top"
+          class="w-full object-cover object-top"
+        />
+
+        <!-- BAGIAN 4: Daftar Transaksi -->
+        <img
+          src="/mobile-list-baru.jpeg"
           alt="Preview Dashboard FTracker Mobile Bottom"
           class="w-full object-cover object-top -mt-1"
         />
