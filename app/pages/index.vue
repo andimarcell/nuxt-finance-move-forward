@@ -35,7 +35,7 @@ const ctaLabel = computed(() => {
 
     <!-- Headline Utama -->
     <h1
-      class="text-4xlsm:text-5xl md:text-7xl font-extrabold tracking-tight leading-tight mb-6 sm-leading-none text-gray-900  dark:text-white"
+      class="text-4xlsm:text-5xl md:text-7xl font-extrabold tracking-tight leading-tight mb-6 sm-leading-none text-gray-900 dark:text-white"
     >
       Lacak Keuanganmu <br class="hidden md:block" />
       <span class="text-primary">Lebih Cerdas.</span>
@@ -78,13 +78,11 @@ const ctaLabel = computed(() => {
         <div class="w-3 h-3 rounded-full bg-green-400"></div>
       </div>
       <!-- Body Mockup -->
-      <div
-        class="bg-white dark:bg-gray-950 aspect-video flex flex-col items-center justify-center relative"
-      >
+      <div class="bg-white dark:bg-gray-950 relative w-full h-auto">
         <img
-          src="/preview-laptop-baru.png"
+          src="/laptop-baru.png"
           alt="Preview Dashboard FTracker"
-          class="w-full h-full object-cover object-top opacity-90 hover:opacity-100 transition-opacity duration-300"
+          class="w-full h-auto opacity-90 hover:opacity-100 transition-opacity duration-300"
         />
       </div>
     </div>
@@ -107,14 +105,14 @@ const ctaLabel = computed(() => {
       >
         <!-- BAGIAN 1: Ringkasan & Chart (Atas) -->
         <img
-          src="/preview-mobile.jpg"
+          src="/mobile-lama.jpg"
           alt="Preview Dashboard FTracker Mobile Top"
           class="w-full object-cover object-top"
         />
 
         <!-- BAGIAN 2: Daftar Transaksi (Bawah) -->
         <img
-          src="/preview-mobile-list.jpg"
+          src="/mobile-list-lama.jpg"
           alt="Preview Dashboard FTracker Mobile Bottom"
           class="w-full object-cover object-top -mt-1"
         />
