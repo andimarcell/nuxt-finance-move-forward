@@ -270,21 +270,23 @@ const series = computed(() => categorySummary.value.series);
     class="p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm flex flex-col justify-between h-full"
   >
     <!-- 1. BAGIAN HEADER (Judul, Subjudul, & Sakelar Belanja/Masuk) -->
-    <div class="flex items-center justify-between mb-6">
+    <div
+      class="flex flex-col sm:flex-row item-start sm:items-center justify-between gap-4 mb-6"
+    >
       <div>
         <h3
           class="text-base sm:text-lg font-bold text-gray-900 dark:text-white"
         >
           Distribusi Kategori
         </h3>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 max-w-xs sm:max-w-md">
           Pembagian arus kas {{ formattedSubtitle }} berdasarkan kategori
         </p>
       </div>
 
       <!-- Tombol Sakelar Dinamis Belanja/Masuk -->
       <div
-        class="flex gap-1 bg-gray-50 dark:bg-gray-800 p-1 rounded-lg border border-gray-100 dark:border-gray-800 shrink-0"
+        class="flex gap-1 bg-gray-50 dark:bg-gray-800 p-1 rounded-lg border border-gray-100 dark:border-gray-800 shrink-0 w-full sm:w-auto justify-center-safe"
       >
         <button
           type="button"
