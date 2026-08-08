@@ -72,13 +72,17 @@ const handleSubmit = async () => {
       });
       if (error) throw error;
 
-      // TOAST SUKSES DAFTAR
+      // 1. UPDATE PESAN SUKSES DAFTAR BIAR USER LANGSUNG FAHAM BUKA GMAIL
       toast.add({
-        title: "Registrasi Berhasil!",
-        description: "Akun Anda telah terdaftar. Selamat bergabung!",
+        title: "Registrasi Berhasil! 📩",
+        description: `Link verifikasi telah dikirim ke ${email.value}. Silakan periksa inbox Gmail Anda untuk mengaktifkan akun.`,
         color: "success",
-        icon: "i-heroicons-check-circle",
+        icon: "i-heroicons-paper-airplane",
+        timeout: 8000, // Tampil lebih lama (8 detik) agar terbaca utuh
       });
+
+      // Pindahkan mode form ke Login setelah daftar
+      authMode.value = "login";
     } else if (authMode.value === "magic-link") {
       // LOGIC MAGIC LINK (OTP)
       const { error } = await supabase.auth.signInWithOtp({
@@ -92,7 +96,7 @@ const handleSubmit = async () => {
       // TOAST MAGIC LINK SUKSES
       toast.add({
         title: "Cek Email Anda",
-        description: `Kami telah mengirimkan link login ke${email.value}. Silahkan periksa kotak masuk.`,
+        description: `Kami telah mengirimkan link login ke ${email.value}. Silahkan periksa kotak masuk.`,
         color: "success",
         icon: "i-heroicons-check-circle",
       });
@@ -105,6 +109,10 @@ const handleSubmit = async () => {
     // PENERJEMAH ERROR SUPABASE KE BAHASA INDONESIA
     if (errorMessage.includes("Invalid login credentials")) {
       errorMessage = "Email atau Password salah!";
+    } else if (errorMessage.includes("Email not confirmed")) {
+      // 👈 TERJEMAHAN KHUSUS UNTUK EMAIL BELUM DIKONFIRMASI
+      errorMessage =
+        "Email Anda belum dikonfirmasi! Silakan buka Gmail dan klik link verifikasi yang telah kami kirimkan.";
     } else if (errorMessage.includes("Password should be at least")) {
       errorMessage = "Password minimal 6 karakter!";
     } else if (
