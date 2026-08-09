@@ -3,11 +3,15 @@ import { computed } from "vue";
 
 const props = defineProps({
   transaction: Object,
-  // Properti totalAmount
   totalAmount: {
     type: Number,
     default: 1, // Untuk menghindari pembagian dengan angka 0
   },
+  // 🟢 TAMBAHAN BARU: Menerima status read-only dari dashboard utama
+  readOnly: {
+    type: Boolean,
+    default: false
+  }
 });
 const emit = defineEmits(["delete", "edit"]);
 
@@ -33,17 +37,14 @@ const defaultIcons = {
 const icon = computed(() => {
   const cat = props.transaction.category?.toLowerCase() || ""
   
-  // 1. Jika ada ikon kustom tersimpan di database, gunakan itu!
   if (props.transaction.category_icon) {
     return props.transaction.category_icon
   }
   
-  // 2. Jika tidak ada, cek apakah masuk kategori bawaan (default)
   if (defaultIcons[cat]) {
     return defaultIcons[cat]
   }
 
-  // 3. Jika benar-benar kosong, gunakan ikon penanda tag default
   return "i-heroicons-tag"
 })
 
@@ -60,6 +61,9 @@ const toast = useToast();
 const isLoading = ref(false);
 
 const deleteTransaction = async () => {
+  // Guard tambahan untuk keamanan sisi script
+  if (props.readOnly) return;
+  
   isLoading.value = true;
   try {
     await supabase.from("transactions").delete().eq("id", props.transaction.id);
@@ -102,10 +106,6 @@ const actions = [
 </script>
 
 <template>
-  <!-- Container Utama:
-       - Di HP: Menggunakan Flexbox biasa (flex justify-between) agar layout samping kiri-kanan nempel rapi.
-       - Di Laptop: Menggunakan Grid 2 Kolom (sm:grid sm:grid-cols-2) agar lurus vertikal di tengah.
-  -->
   <div
     class="border-b border-gray-100 dark:border-gray-800 py-3.5 mt-1 flex sm:grid sm:grid-cols-2 items-center justify-between sm:justify-stretch gap-4"
   >
@@ -116,17 +116,12 @@ const actions = [
       class="flex items-start sm:items-center justify-between min-w-0 flex-1 sm:flex-none"
     >
       <div class="flex items-start sm:items-center space-x-3 min-w-0 flex-1">
-        <!-- Ikon: Menempel di atas pada HP (items-start), di tengah pada Laptop (sm:items-center) -->
         <UIcon
           :name="icon"
           :class="[iconColor, 'shrink-0 mt-0.5 sm:mt-0 w-5 h-5']"
         />
 
         <div class="flex flex-col min-w-0">
-          <!-- Deskripsi:
-               - Di HP: Bisa patah baris (break-words).
-               - Di Laptop: Dipotong jika sangat panjang agar rapi (sm:truncate sm:max-w-[180px] md:max-w-[240px]).
-          -->
           <UTooltip
             :text="transaction.description"
             :content="{ side: 'top', align: 'center' }"
@@ -138,7 +133,6 @@ const actions = [
             </div>
           </UTooltip>
 
-          <!-- Progress bar -->
           <div
             class="w-full bg-gray-100 dark:bg-gray-800 h-1.5 rounded-full overflow-hidden mt-2 max-w-50 sm:max-w-xs"
           >
@@ -148,7 +142,7 @@ const actions = [
               :style="{ width: `${percentOfTotal}%` }"
             ></div>
           </div>
-          <!-- Badge Khusus HP (Muncul di bawah deskripsi) -->
+          
           <div class="mt-1 block sm:hidden">
             <UBadge
               color="neutral"
@@ -161,9 +155,6 @@ const actions = [
         </div>
       </div>
 
-      <!-- Badge Khusus Laptop: 
-           - Muncul di paling kanan Kolom 1 (Sehingga berada pas di TENGAH-TENGAH BARIS [50% mark])
-      -->
       <div class="hidden sm:block shrink-0 ml-4">
         <UBadge
           color="neutral"
@@ -192,7 +183,8 @@ const actions = [
         </sup>
       </div>
 
-      <div>
+      <!-- 🔒 SENSOR: Sembunyikan Tombol Titik Tiga (Edit/Hapus) jika dalam Member Mode -->
+      <div v-if="!readOnly">
         <UDropdownMenu
           :items="actions"
           :content="{ side: 'bottom', align: 'end' }"

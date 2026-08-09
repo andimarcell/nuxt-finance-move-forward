@@ -7,24 +7,28 @@ import {
   subYears,
   subMonths,
   subDays,
-} from "date-fns"; // TAMBAHKAN IMPORT INI
+} from "date-fns";
 import { id } from "date-fns/locale";
 import { transactionViewsItems } from "~/utils/constants";
 
+const config = useRuntimeConfig()
+const isMemberMode = config.public.memberMode // hasilnya true atau false dari .env
+
 const selectedView = ref(transactionViewsItems[1]);
-// TANGGAL ACUAN: Default-nya hari ini
 const referenceDate = ref(new Date());
 const isModalOpen = ref(false);
-const selectedTransaction = ref(null); // State untuk menyimpan transaksi yang sedang diedit
+const selectedTransaction = ref(null); 
 
 const onEditClick = (transaction) => {
-  selectedTransaction.value = transaction; // Set transaksi yang akan diedit
-  isModalOpen.value = true; // Buka modal
+  if (isMemberMode) return // 🔒 SENSOR: Member tidak boleh klik edit
+  selectedTransaction.value = transaction; 
+  isModalOpen.value = true; 
 };
 
 const onAddClick = () => {
-  selectedTransaction.value = null; // Pastikan tidak ada transaksi yang dipilih
-  isModalOpen.value = true; // Buka modal untuk tambah transaksi baru
+  if (isMemberMode) return // 🔒 SENSOR: Member tidak boleh klik tambah
+  selectedTransaction.value = null; 
+  isModalOpen.value = true; 
 };
 
 // Kirim referenceDate ke composable
@@ -80,7 +84,7 @@ const prevPeriod = () => {
     referenceDate.value = subDays(referenceDate.value, 1);
 };
 
-// Judul dinamis untuk navigasi (Misal: "May 2026" atau "2025")
+// Judul dinamis untuk navigasi
 const periodLabel = computed(() => {
   if (selectedView.value === "tahunan")
     return format(referenceDate.value, "yyyy", { locale: id });
@@ -89,16 +93,13 @@ const periodLabel = computed(() => {
   return format(referenceDate.value, "d MMMM yyyy", { locale: id });
 });
 
-// Menentukan apakah kondisi keuangan sedang "Tekor" (Defisit)
-// 1. Logika Warna Income: Merah jika pemasukan turun dibanding periode lalu
+// Menentukan kondisi keuangan
 const incomeStatusColor = computed(() => {
   return incomeTotal.value < previousIncomeTotal.value
     ? "text-red-600 dark:text-red-400"
     : "text-green-600 dark:text-green-400";
 });
 
-// 2. Logika Warna Expense: Merah jika pengeluaran naik (boros) dibanding periode lalu
-// ATAU jika pengeluaran sudah melebihi pendapatan (defisit)
 const expenseStatusColor = computed(() => {
   const isSpendingMore = expenseTotal.value > previousExpenseTotal.value;
   const isOverBudget = expenseTotal.value > incomeTotal.value;
@@ -108,7 +109,6 @@ const expenseStatusColor = computed(() => {
     : "text-green-600 dark:text-green-400";
 });
 
-// 3. Logika Warna Savings: Merah jika tabungan berkurang atau jika minus (tekor)
 const savingsStatusColor = computed(() => {
   const isDecreasing = savingsTotal.value < previousSavingsTotal.value;
   const isNegative = savingsTotal.value < 0;
@@ -118,26 +118,18 @@ const savingsStatusColor = computed(() => {
     : "text-green-600 dark:text-green-400";
 });
 
-// 4. Logika Warna Cash on Hand: Merah hanya jika saldo total di database minus
 const cashColor = computed(() => {
   return balanceTotal.value < 0
     ? "text-red-600 dark:text-red-400"
     : "text-green-600 dark:text-green-400";
 });
 
-// State penampug sonkronisasi tombol grafik aktif (default: 'expense')
 const activeChartType = ref("all");
 
-// Fungsi penyaringan data reaktif berdasarkan tombol aktif di grafik
-// Ubah fungsi filteredGroupByDate agar melakukan penyaringan bertingkat (Tipe & Kategori)
-// Ganti total fungsi computed
 const filteredGroupByDate = computed(() => {
   let grouped = {};
-
-  // Jaring pengaman memastikan 'txs' selalu berupa array (tidak null/undefined) saat pertama dimuat
   const txs = transactions.value || [];
 
-  // A. Filter Tipe Utama (Semua, Pengeluaran, Pemasukan) berdasarkan tab grafik aktif
   let filtered = txs.filter((transaction) => {
     if (activeChartType.value === "all") {
       if (activeCategory.value) {
@@ -150,19 +142,16 @@ const filteredGroupByDate = computed(() => {
     return transaction.type?.toLowerCase() === activeChartType.value;
   });
 
-  // B. Filter Kategori Tingkat Lanjut (Prioritas klik grafik, cadangan dropdown list)
   filtered = filtered.filter((t) => {
     if (activeCategory.value && activeChartType.value !== "all") {
       return t.category?.toLowerCase() === activeCategory.value;
     }
-    // KONDISI CADANGAN DROPDOWN
     if (selectedCategory.value !== "all") {
-      return transaction.category?.toLowerCase() === selectedCategory.value;
+      return t.category?.toLowerCase() === selectedCategory.value;
     }
     return true;
   });
 
-  // C. Sinkronisasi pengurutan data secara presisi (Tanggal & Nominal)
   filtered.sort((a, b) => {
     const dateA = new Date(a.created_at).getTime();
     const dateB = new Date(b.created_at).getTime();
@@ -176,7 +165,6 @@ const filteredGroupByDate = computed(() => {
     return 0;
   });
 
-  // D. Kelompokkan hasil akhir yang sudah steril ke dalam tanggal harian
   for (const transaction of filtered) {
     const date = new Date(transaction.created_at).toISOString().split("T")[0];
     if (!grouped[date]) grouped[date] = [];
@@ -185,35 +173,27 @@ const filteredGroupByDate = computed(() => {
   return grouped;
 });
 
-// State penampung kategori filter aktif dari grafik (default: null)
 const activeCategory = ref(null);
 
-// Watcher untuk menyetel ulang filter kategori menjadi null setiap kali pengguna berpindah tab utama
 watch(activeChartType, () => {
   activeCategory.value = null;
   selectedCategory.value = "all";
 });
 
-// State filter kategori manual dan metode pengurutan data harian
 const selectedCategory = ref("all");
-const sortBy = ref("date_desc"); // Default: Tanggal terbaru ke terlama
+const sortBy = ref("date_desc");
 
-// Watcher tambahan untuk meriset filter kategori manual jika tombol tab utama grafik berpindah
 watch(activeChartType, () => {
   activeCategory.value = null;
-  selectedCategory.value = "all"; // Reset filter list harian
+  selectedCategory.value = "all";
 });
 
-// Menghitung total nominal aktif untuk dikirim ke masing-masing progress bar
 const activeTotalAmount = computed(() => {
   if (activeChartType.value === "income") return incomeTotal.value;
   if (activeChartType.value === "expense") return expenseTotal.value;
-  return incomeTotal.value + expenseTotal.value; // Jika "Semua", totalnya adalah Pemasukan + Pengeluaran
+  return incomeTotal.value + expenseTotal.value;
 });
 
-// Memproses penyaringan daftar kategori
-// Menggunakan daftar kategori filter statis
-// Mengolah daftar kategori filter secara dinamis & asinkronus lengkap dengan ikon aslinya dari DB
 const categoryFilterItems = computed(() => {
   const defaultItems = [
     { label: "Semua Kategori", value: "all", icon: "i-heroicons-squares-2x2" },
@@ -233,7 +213,6 @@ const categoryFilterItems = computed(() => {
   const customItems = [];
   const uniqueCustomNames = new Set();
 
-  // Ambil dan petakan ikon kustom asli dari transaksi yang aktif saat ini di dashboard
   const txs = transactions.value || [];
   txs.forEach((t) => {
     const cat = t.category?.toLowerCase()?.trim() || "";
@@ -248,7 +227,7 @@ const categoryFilterItems = computed(() => {
         customItems.push({
           label: cat.charAt(0).toUpperCase() + cat.slice(1),
           value: cat,
-          icon: t.category_icon || "i-heroicons-tag", // Ambil ikon kustom asli dari DB!
+          icon: t.category_icon || "i-heroicons-tag",
         });
       }
     }
@@ -259,7 +238,7 @@ const categoryFilterItems = computed(() => {
 </script>
 
 <template>
-  <!-- bagian header numpuk di hp, sejejer di laptop -->
+  <!-- bagian header -->
   <section
     class="flex flex-col items-center sm:flex-row sm:items-center justify-between mb-8 sm:mb-10 gap-4"
   >
@@ -334,6 +313,7 @@ const categoryFilterItems = computed(() => {
       />
     </div>
   </section>
+
   <!-- bagian header transaction-->
   <section
     class="flex flex-col sm:flex-row ml-1 sm:ml-0 justify-between mb-6 sm:mb-10 gap-2 mt-5"
@@ -345,7 +325,10 @@ const categoryFilterItems = computed(() => {
         {{ expense.length }} pengeluaran pada periode ini.
       </div>
     </div>
+    
+    <!-- 🔒 SENSOR: Sembunyikan Tombol "Tambah Transaksi" dan Modal Input jika dalam Member Mode -->
     <div
+      v-if="!isMemberMode"
       class="w-full sm:w-auto mt-4 sm:mt-0 flex justify-center sm:justify-end"
     >
       <TransactionModal
@@ -355,7 +338,6 @@ const categoryFilterItems = computed(() => {
         :transaction="selectedTransaction"
         :currentBalance="balanceTotal"
       />
-      <!-- tombol add jadi full width di hp -->
       <UButton
         icon="i-heroicons-plus-circle"
         color="neutral"
@@ -369,7 +351,6 @@ const categoryFilterItems = computed(() => {
 
   <!-- Filter & sortir kondisonal -->
   <section class="flex justify-center sm:justify-end mb-6 ml-1 sm:ml-0 gap-2">
-    <!-- Dropdown Saring Kategori -->
     <div class="w-full max-w-42 sm:w-64">
       <UFormField label="Saring Kategori">
         <USelectMenu
@@ -381,11 +362,9 @@ const categoryFilterItems = computed(() => {
           class="w-full capitalize cursor-pointer"
           :ui="{
             trigger: 'capitalize',
-            content:
-              'w-[var(--radix-select-trigger-width)] min-w-[200px] capitalize',
+            content: 'w-[var(--radix-select-trigger-width)] min-w-[200px] capitalize',
           }"
         >
-          <!-- Slot kustom untuk merender gambar ikon di sebelah kiri nama kategori -->
           <template #item="{ item }">
             <div class="flex items-center gap-2">
               <UIcon
@@ -399,7 +378,6 @@ const categoryFilterItems = computed(() => {
       </UFormField>
     </div>
     <div class="w-full max-w-42 sm:w-64">
-      <!-- Dropdown Urutkan Data -->
       <UFormField label="Urutkan Berdasarkan">
         <USelect
           v-model="sortBy"
@@ -416,13 +394,13 @@ const categoryFilterItems = computed(() => {
       </UFormField>
     </div>
   </section>
-  <!-- bagian list transaksi & Grafik (Grid 2 Kolom di Desktop, Grafik Naik ke Atas di HP) -->
+
+  <!-- bagian list transaksi & Grafik -->
   <section
     :key="selectedView"
     :class="{ 'opacity-50': isLoading, 'transition-opacity': true }"
     class="min-h-150"
   >
-    <!-- Kolom 2 (Daftar Transaksi) - Menggunakan order-2 (Bawah di HP) dan lg:order-1 (Kiri di Desktop) -->
     <div class="order-2 lg:order-1 lg:col-span-2">
       <div
         v-for="(transactionOnDay, date) in filteredGroupByDate"
@@ -431,11 +409,13 @@ const categoryFilterItems = computed(() => {
       >
         <TransactionDailySummary :date="date" :transaction="transactionOnDay" />
 
+        <!-- 🔒 SENSOR: Kirim status read-only ke masing-masing item transaksi -->
         <Transaction
           v-for="(transaction, index) in transactionOnDay"
           :key="index"
           :transaction="transaction"
           :totalAmount="activeTotalAmount"
+          :read-only="isMemberMode" 
           @edit="onEditClick(transaction)"
           @delete="refreshAll()"
         />
