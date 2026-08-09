@@ -12,7 +12,7 @@ import { id } from "date-fns/locale";
 import { transactionViewsItems } from "~/utils/constants";
 
 const config = useRuntimeConfig()
-const isMemberMode = config.public.memberMode // hasilnya true atau false dari .env
+const isMemberMode = config.public.memberMode // mengambil nilai true / false dari .env
 
 const selectedView = ref(transactionViewsItems[1]);
 const referenceDate = ref(new Date());
@@ -20,13 +20,13 @@ const isModalOpen = ref(false);
 const selectedTransaction = ref(null); 
 
 const onEditClick = (transaction) => {
-  if (isMemberMode) return // 🔒 SENSOR: Member tidak boleh klik edit
+  if (isMemberMode) return // 🔒 PENGAMAN: Member tidak boleh edit
   selectedTransaction.value = transaction; 
   isModalOpen.value = true; 
 };
 
 const onAddClick = () => {
-  if (isMemberMode) return // 🔒 SENSOR: Member tidak boleh klik tambah
+  if (isMemberMode) return // 🔒 PENGAMAN: Member tidak boleh tambah
   selectedTransaction.value = null; 
   isModalOpen.value = true; 
 };
@@ -238,7 +238,7 @@ const categoryFilterItems = computed(() => {
 </script>
 
 <template>
-  <!-- bagian header -->
+  <!-- BAGIAN 1: HEADER NAVIGASI BULANAN -->
   <section
     class="flex flex-col items-center sm:flex-row sm:items-center justify-between mb-8 sm:mb-10 gap-4"
   >
@@ -268,7 +268,7 @@ const categoryFilterItems = computed(() => {
     </div>
   </section>
 
-  <!-- bagian trend -->
+  <!-- BAGIAN 2: EMPAT KARTU TREN (Pemasukan, Pengeluaran, Tabungan, Total Saldo) -->
   <section
     class="grid text-sm grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 sm:gap-16 mb-10 gap-8 ml-1 sm:ml-0"
   >
@@ -301,7 +301,9 @@ const categoryFilterItems = computed(() => {
       :color="cashColor"
     />
   </section>
-  <section>
+
+  <!-- BAGIAN 3: GRAFIK DISTRIBUSI KATEGORI (Tetap Dimunculkan untuk Analisis) -->
+  <section class="mb-10">
     <div class="order-1 lg:order-2 lg:col-span-1">
       <CategoryBreakdown
         :transactions="transactions"
@@ -314,8 +316,13 @@ const categoryFilterItems = computed(() => {
     </div>
   </section>
 
-  <!-- bagian header transaction-->
+  <!-- ========================================================================= -->
+  <!-- 🔒 SENSOR MEMBER MODE: Seluruh elemen di bawah ini HANYA terbuka untuk Admin -->
+  <!-- ========================================================================= -->
+  
+  <!-- BAGIAN 4: HEADER TRANSAKSI -->
   <section
+    v-if="!isMemberMode"
     class="flex flex-col sm:flex-row ml-1 sm:ml-0 justify-between mb-6 sm:mb-10 gap-2 mt-5"
   >
     <div>
@@ -326,11 +333,7 @@ const categoryFilterItems = computed(() => {
       </div>
     </div>
     
-    <!-- 🔒 SENSOR: Sembunyikan Tombol "Tambah Transaksi" dan Modal Input jika dalam Member Mode -->
-    <div
-      v-if="!isMemberMode"
-      class="w-full sm:w-auto mt-4 sm:mt-0 flex justify-center sm:justify-end"
-    >
+    <div class="w-full sm:w-auto mt-4 sm:mt-0 flex justify-center sm:justify-end">
       <TransactionModal
         v-model:modelValue="isModalOpen"
         @update:modelValue="refreshAll"
@@ -349,8 +352,11 @@ const categoryFilterItems = computed(() => {
     </div>
   </section>
 
-  <!-- Filter & sortir kondisonal -->
-  <section class="flex justify-center sm:justify-end mb-6 ml-1 sm:ml-0 gap-2">
+  <!-- BAGIAN 5: FILTER KATEGORI & URUTAN DATA -->
+  <section 
+    v-if="!isMemberMode" 
+    class="flex justify-center sm:justify-end mb-6 ml-1 sm:ml-0 gap-2"
+  >
     <div class="w-full max-w-42 sm:w-64">
       <UFormField label="Saring Kategori">
         <USelectMenu
@@ -395,8 +401,9 @@ const categoryFilterItems = computed(() => {
     </div>
   </section>
 
-  <!-- bagian list transaksi & Grafik -->
+  <!-- BAGIAN 6: DETAIL LIST TRANSAKSI HARIAN -->
   <section
+    v-if="!isMemberMode"
     :key="selectedView"
     :class="{ 'opacity-50': isLoading, 'transition-opacity': true }"
     class="min-h-150"
@@ -409,7 +416,6 @@ const categoryFilterItems = computed(() => {
       >
         <TransactionDailySummary :date="date" :transaction="transactionOnDay" />
 
-        <!-- 🔒 SENSOR: Kirim status read-only ke masing-masing item transaksi -->
         <Transaction
           v-for="(transaction, index) in transactionOnDay"
           :key="index"
@@ -429,7 +435,9 @@ const categoryFilterItems = computed(() => {
       </div>
     </div>
   </section>
-  <section v-if="isLoading && transactions.length === 0">
+
+  <!-- BAGIAN 7: SKELETON LOADER SAAT LOADING DATA -->
+  <section v-if="!isMemberMode && isLoading && transactions.length === 0">
     <USkeleton v-for="i in 3" :key="i" class="h-8 w-full rounded-md mb-2" />
   </section>
 </template>
