@@ -11,36 +11,36 @@ import {
 import { id } from "date-fns/locale";
 import { transactionViewsItems } from "~/utils/constants";
 
-const config = useRuntimeConfig()
-const isMemberMode = config.public.memberMode // mengambil nilai true / false dari .env
+const config = useRuntimeConfig();
+const isMemberMode = config.public.memberMode;
 
 const selectedView = ref(transactionViewsItems[1]);
 const referenceDate = ref(new Date());
 const isModalOpen = ref(false);
-const selectedTransaction = ref(null); 
+const selectedTransaction = ref(null);
 
 const onEditClick = (transaction) => {
-  if (isMemberMode) return // 🔒 PENGAMAN: Member tidak boleh edit
-  selectedTransaction.value = transaction; 
-  isModalOpen.value = true; 
+  if (isMemberMode) return;
+  selectedTransaction.value = transaction;
+  isModalOpen.value = true;
 };
 
 const onAddClick = () => {
-  if (isMemberMode) return // 🔒 PENGAMAN: Member tidak boleh tambah
-  selectedTransaction.value = null; 
-  isModalOpen.value = true; 
+  if (isMemberMode) return;
+  selectedTransaction.value = null;
+  isModalOpen.value = true;
 };
 
-// Kirim referenceDate ke composable
 const { current, previous } = useSelectedTimePeriod(
   selectedView,
   referenceDate,
 );
+
+// Composable memanggil watcher otomatis tanpa mengunci render
 const {
   transactions,
   isLoading,
   refreshTransactions,
-  transactionGroupByDate,
   income,
   expense,
   incomeTotal,
@@ -57,15 +57,10 @@ const {
   balanceTotal: previousBalanceTotal,
 } = useFetchTransactions(previous);
 
-// Fungsi untuk memperbarui semua data
 const refreshAll = async () => {
   await Promise.all([refreshTransactions(), refreshPreviousTransactions()]);
 };
 
-await refreshTransactions();
-await refreshPreviousTransactions();
-
-// Fungsi untuk navigasi
 const nextPeriod = () => {
   if (selectedView.value === "tahunan")
     referenceDate.value = addYears(referenceDate.value, 1);
@@ -84,7 +79,6 @@ const prevPeriod = () => {
     referenceDate.value = subDays(referenceDate.value, 1);
 };
 
-// Judul dinamis untuk navigasi
 const periodLabel = computed(() => {
   if (selectedView.value === "tahunan")
     return format(referenceDate.value, "yyyy", { locale: id });
@@ -93,7 +87,6 @@ const periodLabel = computed(() => {
   return format(referenceDate.value, "d MMMM yyyy", { locale: id });
 });
 
-// Menentukan kondisi keuangan
 const incomeStatusColor = computed(() => {
   return incomeTotal.value < previousIncomeTotal.value
     ? "text-red-600 dark:text-red-400"
@@ -126,6 +119,11 @@ const cashColor = computed(() => {
 
 const activeChartType = ref("all");
 
+const getCategoryValue = (cat) => {
+  if (cat && typeof cat === "object") return cat.value;
+  return cat;
+};
+
 const filteredGroupByDate = computed(() => {
   let grouped = {};
   const txs = transactions.value || [];
@@ -144,10 +142,13 @@ const filteredGroupByDate = computed(() => {
 
   filtered = filtered.filter((t) => {
     if (activeCategory.value && activeChartType.value !== "all") {
-      return t.category?.toLowerCase() === activeCategory.value;
+      return t.category?.toLowerCase()?.trim() === activeCategory.value?.toLowerCase()?.trim();
     }
-    if (selectedCategory.value !== "all") {
-      return t.category?.toLowerCase() === selectedCategory.value;
+    
+    const filterValue = getCategoryValue(selectedCategory.value);
+    
+    if (filterValue !== "all") {
+      return t.category?.toLowerCase()?.trim() === filterValue?.toLowerCase()?.trim();
     }
     return true;
   });
@@ -238,7 +239,6 @@ const categoryFilterItems = computed(() => {
 </script>
 
 <template>
-  <!-- BAGIAN 1: HEADER NAVIGASI BULANAN -->
   <section
     class="flex flex-col items-center sm:flex-row sm:items-center justify-between mb-8 sm:mb-10 gap-4"
   >
@@ -268,7 +268,6 @@ const categoryFilterItems = computed(() => {
     </div>
   </section>
 
-  <!-- BAGIAN 2: EMPAT KARTU TREN (Pemasukan, Pengeluaran, Tabungan, Total Saldo) -->
   <section
     class="grid text-sm grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 sm:gap-16 mb-10 gap-8 ml-1 sm:ml-0"
   >
@@ -302,7 +301,6 @@ const categoryFilterItems = computed(() => {
     />
   </section>
 
-  <!-- BAGIAN 3: GRAFIK DISTRIBUSI KATEGORI (Tetap Dimunculkan untuk Analisis) -->
   <section class="mb-10">
     <div class="order-1 lg:order-2 lg:col-span-1">
       <CategoryBreakdown
@@ -316,11 +314,6 @@ const categoryFilterItems = computed(() => {
     </div>
   </section>
 
-  <!-- ========================================================================= -->
-  <!-- 🔒 SENSOR MEMBER MODE: Seluruh elemen di bawah ini HANYA terbuka untuk Admin -->
-  <!-- ========================================================================= -->
-  
-  <!-- BAGIAN 4: HEADER TRANSAKSI -->
   <section
     v-if="!isMemberMode"
     class="flex flex-col sm:flex-row ml-1 sm:ml-0 justify-between mb-6 sm:mb-10 gap-2 mt-5"
@@ -332,8 +325,10 @@ const categoryFilterItems = computed(() => {
         {{ expense.length }} pengeluaran pada periode ini.
       </div>
     </div>
-    
-    <div class="w-full sm:w-auto mt-4 sm:mt-0 flex justify-center sm:justify-end">
+
+    <div
+      class="w-full sm:w-auto mt-4 sm:mt-0 flex justify-center sm:justify-end"
+    >
       <TransactionModal
         v-model:modelValue="isModalOpen"
         @update:modelValue="refreshAll"
@@ -352,9 +347,8 @@ const categoryFilterItems = computed(() => {
     </div>
   </section>
 
-  <!-- BAGIAN 5: FILTER KATEGORI & URUTAN DATA -->
-  <section 
-    v-if="!isMemberMode" 
+  <section
+    v-if="!isMemberMode"
     class="flex justify-center sm:justify-end mb-6 ml-1 sm:ml-0 gap-2"
   >
     <div class="w-full max-w-42 sm:w-64">
@@ -368,7 +362,8 @@ const categoryFilterItems = computed(() => {
           class="w-full capitalize cursor-pointer"
           :ui="{
             trigger: 'capitalize',
-            content: 'w-[var(--radix-select-trigger-width)] min-w-[200px] capitalize',
+            content:
+              'w-[var(--radix-select-trigger-width)] min-w-[200px] capitalize',
           }"
         >
           <template #item="{ item }">
@@ -401,7 +396,6 @@ const categoryFilterItems = computed(() => {
     </div>
   </section>
 
-  <!-- BAGIAN 6: DETAIL LIST TRANSAKSI HARIAN -->
   <section
     v-if="!isMemberMode"
     :key="selectedView"
@@ -421,7 +415,7 @@ const categoryFilterItems = computed(() => {
           :key="index"
           :transaction="transaction"
           :totalAmount="activeTotalAmount"
-          :read-only="isMemberMode" 
+          :read-only="isMemberMode"
           @edit="onEditClick(transaction)"
           @delete="refreshAll()"
         />
@@ -436,7 +430,6 @@ const categoryFilterItems = computed(() => {
     </div>
   </section>
 
-  <!-- BAGIAN 7: SKELETON LOADER SAAT LOADING DATA -->
   <section v-if="!isMemberMode && isLoading && transactions.length === 0">
     <USkeleton v-for="i in 3" :key="i" class="h-8 w-full rounded-md mb-2" />
   </section>

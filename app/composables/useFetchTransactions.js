@@ -6,14 +6,17 @@ export const useFetchTransactions = (period) => {
   const allTimeBalance = ref(0);
 
   const fetchTransactions = async () => {
-    if (!user.value) return; // Pastikan user sudah login sebelum fetch data{
+    if (!user.value || !period.value?.start || !period.value?.end) return;
     isLoading.value = true;
     try {
+      const startDate = period.value.start.toISOString();
+      const endDate = period.value.end.toISOString();
+
       const { data, error } = await supabase
         .from("transactions")
         .select()
-        .gte("created_at", period.value.start.toISOString())
-        .lte("created_at", period.value.end.toISOString())
+        .gte("created_at", startDate)
+        .lte("created_at", endDate)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -21,50 +24,47 @@ export const useFetchTransactions = (period) => {
 
       const { data: allData, error: allTimeError } = await supabase
         .from("transactions")
-        .select("amount, type") // Kita hanya tarik kolom yang perlu saja biar cepat
-        .lte("created_at", period.value.end.toISOString()); // Dibatasi sampai akhir periode terpilih
+        .select("amount, type")
+        .lte("created_at", endDate);
+
       if (allTimeError) throw allTimeError;
-      console.log(
-        `[${period.value.end.toISOString().split("T")[0]}] Total Data Terbaca:`,
-        allData.length,
-      );
-      // DI SINI LOGIKANYA:
-      // Kita hitung dari nol, lalu iterasi semua data.
-      allTimeBalance.value = allData.reduce((acc, transaction) => {
+
+      allTimeBalance.value = (allData || []).reduce((acc, transaction) => {
         const type = transaction.type?.toLowerCase();
         const amount = Number(transaction.amount);
 
         if (type === "income") {
-          return acc + amount; // Kalau uang masuk, saldo bertambah
+          return acc + amount;
         } else if (type === "expense") {
-          return acc - amount; // Kalau uang keluar (expense), saldo BERKURANG
+          return acc - amount;
         }
         return acc;
       }, 0);
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error fetching transactions:", error);
       transactions.value = [];
     } finally {
       isLoading.value = false;
     }
   };
-  // transactions.value = await fetchTransactions();
+
+  // 🟢 SOLUSI ULTIMATE: Memantau teks string ISO (bukan objek Date) agar TIDAK LOOPING!
   watch(
-    [period, user],
+    () => [
+      period.value?.start?.toISOString(),
+      period.value?.end?.toISOString(),
+      user.value?.id
+    ],
     () => {
       if (user.value) {
         fetchTransactions();
       } else {
-        transactions.value = []; // Reset transaksi jika user logout
+        transactions.value = [];
         allTimeBalance.value = 0;
       }
     },
-    { immediate: true, deep: true },
+    { immediate: true }
   );
-
-  const refreshTransactions = async () => {
-    await fetchTransactions();
-  };
 
   const transactionGroupByDate = computed(() => {
     let grouped = {};
@@ -77,17 +77,14 @@ export const useFetchTransactions = (period) => {
   });
 
   const income = computed(() => {
-    // Tambahkan || [] untuk memberikan fallback array kosong
     return (transactions.value || []).filter(
-      (transaction) =>
-        transaction.type === "income" || transaction.type === "Income",
+      (t) => t.type?.toLowerCase() === "income"
     );
   });
 
   const expense = computed(() => {
     return (transactions.value || []).filter(
-      (transaction) =>
-        transaction.type === "expense" || transaction.type === "Expense",
+      (t) => t.type?.toLowerCase() === "expense"
     );
   });
 
@@ -110,8 +107,6 @@ export const useFetchTransactions = (period) => {
   const balanceTotal = computed(() => {
     return allTimeBalance.value;
   });
-
-  // Gunakan watch pada 'period' langsung
 
   return {
     transactions,
