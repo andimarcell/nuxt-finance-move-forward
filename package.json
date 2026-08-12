@@ -30,6 +30,7 @@
     "vue-router": "^5.0.6",
     "vue3-apexcharts": "^1.11.1",
     "xlsx": "^0.18.5",
+    "xlsx-js-style": "^1.2.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {

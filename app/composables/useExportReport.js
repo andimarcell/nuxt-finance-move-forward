@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx'
+import XLSX from 'xlsx-js-style'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
@@ -14,7 +14,7 @@ export const useExportReport = () => {
     }).format(val || 0)
   }
 
-  // 📊 1. EKSPOR KE EXCEL (.xlsx)
+  // 📊 1. EKSPOR KE EXCEL BERWARNA (.xlsx)
   const exportToExcel = (transactions, periodLabel, totals) => {
     try {
       if (!transactions || transactions.length === 0) {
@@ -50,7 +50,7 @@ export const useExportReport = () => {
         t.description || '-',
         t.category ? t.category.toUpperCase() : '-',
         t.type?.toLowerCase() === 'income' ? 'Pemasukan' : 'Pengeluaran',
-        formatRupiah(t.amount) // Formatted Rupiah
+        formatRupiah(t.amount)
       ])
 
       const fullData = [...summaryData, ...tableHeader, ...tableRows]
@@ -58,16 +58,70 @@ export const useExportReport = () => {
       // Buat Sheet Excel
       const worksheet = XLSX.utils.aoa_to_sheet(fullData)
 
-      // 🟢 FITUR BARU: AUTO LEBAR KOLOM (Mencegah Teks Terpotong di Excel)
+      // 🟢 FITUR PEWARNAAN & STYLING EXCEL (MEWARNAI TABEL)
+      const headerRowIndex = 10 // Baris Header Tabel
+      const range = XLSX.utils.decode_range(worksheet['!ref'])
+
+      for (let R = range.s.r; R <= range.e.r; ++R) {
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+          const cellAddress = XLSX.utils.encode_cell({ r: R, c: C })
+          if (!worksheet[cellAddress]) continue
+
+          // 1. Warna Header Tabel (Hijau Emerald + Teks Putih Tebal)
+          if (R === headerRowIndex) {
+            worksheet[cellAddress].s = {
+              fill: { fgColor: { rgb: '10B981' } }, // Hijau Primary FTracker
+              font: { name: 'Arial', sz: 11, bold: true, color: { rgb: 'FFFFFF' } },
+              alignment: { vertical: 'center', horizontal: 'center' },
+              border: {
+                top: { style: 'thin', color: { rgb: '059669' } },
+                bottom: { style: 'medium', color: { rgb: '059669' } }
+              }
+            }
+          }
+          // 2. Warna Baris Data Transaksi (Baris Selang-Seling + Border Tipis)
+          else if (R > headerRowIndex) {
+            const isEven = R % 2 === 0
+            worksheet[cellAddress].s = {
+              fill: { fgColor: { rgb: isEven ? 'F8FAFC' : 'FFFFFF' } }, // Abu-abu muda selang-seling
+              font: { name: 'Arial', sz: 10, color: { rgb: '0F172A' } },
+              alignment: {
+                vertical: 'center',
+                horizontal: C === 4 ? 'right' : (C === 0 ? 'center' : 'left') // Nominal rata kanan, tanggal rata tengah
+              },
+              border: {
+                top: { style: 'thin', color: { rgb: 'E2E8F0' } },
+                bottom: { style: 'thin', color: { rgb: 'E2E8F0' } },
+                left: { style: 'thin', color: { rgb: 'E2E8F0' } },
+                right: { style: 'thin', color: { rgb: 'E2E8F0' } }
+              }
+            }
+          }
+          // 3. Warna Judul Atas
+          else {
+            if (R === 0) {
+              worksheet[cellAddress].s = {
+                font: { name: 'Arial', sz: 14, bold: true, color: { rgb: '0F172A' } }
+              }
+            } else if (R === 4 || R === 9) {
+              worksheet[cellAddress].s = {
+                font: { name: 'Arial', sz: 11, bold: true, color: { rgb: '10B981' } }
+              }
+            }
+          }
+        }
+      }
+
+      // Lebar Kolom Otomatis
       worksheet['!cols'] = [
-        { wch: 15 }, // Kolom Tanggal
-        { wch: 35 }, // Kolom Keterangan (Dilebarkan agar nama orang muat utuh)
-        { wch: 20 }, // Kolom Kategori
-        { wch: 18 }, // Kolom Tipe
-        { wch: 20 }  // Kolom Nominal
+        { wch: 15 }, // Tanggal
+        { wch: 38 }, // Keterangan
+        { wch: 36 }, // Kategori
+        { wch: 18 }, // Tipe
+        { wch: 22 }  // Nominal
       ]
 
-      // Buat Workbook Excel
+      // Buat Workbook
       const workbook = XLSX.utils.book_new()
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Laporan Keuangan')
 
@@ -78,7 +132,7 @@ export const useExportReport = () => {
 
       toast.add({
         title: 'Berhasil!',
-        description: 'Berkas Laporan Excel berhasil diunduh.',
+        description: 'Berkas Laporan Excel Berwarna berhasil diunduh.',
         color: 'success',
         icon: 'i-heroicons-check-circle'
       })
