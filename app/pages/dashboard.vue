@@ -142,13 +142,18 @@ const filteredGroupByDate = computed(() => {
 
   filtered = filtered.filter((t) => {
     if (activeCategory.value && activeChartType.value !== "all") {
-      return t.category?.toLowerCase()?.trim() === activeCategory.value?.toLowerCase()?.trim();
+      return (
+        t.category?.toLowerCase()?.trim() ===
+        activeCategory.value?.toLowerCase()?.trim()
+      );
     }
-    
+
     const filterValue = getCategoryValue(selectedCategory.value);
-    
+
     if (filterValue !== "all") {
-      return t.category?.toLowerCase()?.trim() === filterValue?.toLowerCase()?.trim();
+      return (
+        t.category?.toLowerCase()?.trim() === filterValue?.toLowerCase()?.trim()
+      );
     }
     return true;
   });
@@ -236,6 +241,35 @@ const categoryFilterItems = computed(() => {
 
   return [...defaultItems, ...customItems];
 });
+
+// Panggil Composable Ekspor Laporan
+const { exportToExcel, exportToPDF } = useExportReport();
+
+// Menu Pilihan Dropdown Ekspor
+const exportMenuItems = computed(() => [
+  [
+    {
+      label: "Unduh Excel (.xlsx)",
+      icon: "i-heroicons-document-text",
+      onSelect: () =>
+        exportToExcel(transactions.value, periodLabel.value, {
+          incomeTotal: incomeTotal.value,
+          expenseTotal: expenseTotal.value,
+          balanceTotal: balanceTotal.value,
+        }),
+    },
+    {
+      label: "Unduh PDF (.pdf)",
+      icon: "i-heroicons-document-arrow-down",
+      onSelect: () =>
+        exportToPDF(transactions.value, periodLabel.value, {
+          incomeTotal: incomeTotal.value,
+          expenseTotal: expenseTotal.value,
+          balanceTotal: balanceTotal.value,
+        }),
+    },
+  ],
+]);
 </script>
 
 <template>
@@ -327,8 +361,17 @@ const categoryFilterItems = computed(() => {
     </div>
 
     <div
-      class="w-full sm:w-auto mt-4 sm:mt-0 flex justify-center sm:justify-end"
+      class="w-full sm:w-auto mt-4 sm:mt-0 flex justify-center sm:justify-end gap-2"
     >
+      <UDropdownMenu :items="exportMenuItems">
+        <UButton
+          icon="i-heroicons-arrow-down-tray"
+          color="neutral"
+          variant="outline"
+          class="cursor-pointer sm:w-auto justify-center"
+          label="Unduh Laporan"
+        />
+      </UDropdownMenu>
       <TransactionModal
         v-model:modelValue="isModalOpen"
         @update:modelValue="refreshAll"
