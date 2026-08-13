@@ -13,16 +13,15 @@ export const useExportReport = () => {
     }).format(val || 0)
   }
 
-  // 🧠 FUNGSI PEMBANTU: Mengolah data transaksi mentah menjadi Struktur Matriks (Side-by-Side)
+  // 🧠 FUNGSI PEMBANTU PINTAR: Menggabungkan nama & membuang teks dalam kurung (...)
   const buildMatrixData = (transactions) => {
-    const monthsMap = new Map() // Penampung kolom bulan unik (misal: Mei 2026, Juni 2026, dst)
-    const rowsMap = new Map()   // Penampung baris unik berdasarkan Nama/Keterangan
+    const monthsMap = new Map()
+    const rowsMap = new Map()
 
     transactions.forEach((t) => {
       if (!t.created_at) return
       const dateObj = new Date(t.created_at)
       
-      // Kunci Bulan YYYY-MM
       const monthKey = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`
       const monthLabel = dateObj.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' })
 
@@ -30,29 +29,34 @@ export const useExportReport = () => {
         monthsMap.set(monthKey, monthLabel)
       }
 
-      // Kunci Baris (Nama Orang / Keterangan)
-      const rowKey = t.description ? t.description.trim() : 'Tanpa Keterangan'
+      // 🟢 PEMBERSIH NAMA OTOMATIS:
+      // Membuang teks dalam kurung seperti "(tunggak)" atau "(masuk 5 juni)" agar nama otomatis KEGABUNG 1 BARIS!
+      let rawName = t.description ? t.description.replace(/\(.*\)/gi, '').trim() : 'Tanpa Keterangan'
+      if (!rawName) rawName = t.description ? t.description.trim() : 'Tanpa Keterangan'
 
-      if (!rowsMap.has(rowKey)) {
-        rowsMap.set(rowKey, {
+      // Membuat huruf depan jadi kapital (misal: "natasha" -> "Natasha")
+      const cleanRowKey = rawName.charAt(0).toUpperCase() + rawName.slice(1)
+
+      if (!rowsMap.has(cleanRowKey)) {
+        rowsMap.set(cleanRowKey, {
           category: t.category ? t.category.toUpperCase() : '-',
           type: t.type?.toLowerCase() === 'income' ? 'Pemasukan' : 'Pengeluaran',
           months: {}
         })
       }
 
-      const rowData = rowsMap.get(rowKey)
+      const rowData = rowsMap.get(cleanRowKey)
+      // Menjumlahkan nominal jika nama & bulannya sama
       rowData.months[monthKey] = (rowData.months[monthKey] || 0) + Number(t.amount)
     })
 
-    // Urutkan kolom bulan dari paling lama ke paling baru
     const sortedMonthKeys = Array.from(monthsMap.keys()).sort()
     const monthHeaders = sortedMonthKeys.map((k) => monthsMap.get(k))
 
     return { sortedMonthKeys, monthHeaders, rowsMap }
   }
 
-  // 📊 1. EXCEL DETAIL TRANSAKSI (Kronologis)
+  // 📊 1. EXCEL DETAIL TRANSAKSI
   const exportToExcel = (transactions, periodLabel, totals) => {
     try {
       if (!transactions || transactions.length === 0) return
@@ -144,7 +148,7 @@ export const useExportReport = () => {
     } catch (e) { toast.add({ title: 'Gagal', description: e.message, color: 'error' }) }
   }
 
-  // 📈 3. EXCEL REKAPITULASI MATRIKS KAS (SIDE-BY-SIDE SAMPING-BERDAMPINGAN PERSIS GAMBAR CONTOH!)
+  // 📈 3. EXCEL REKAPITULASI MATRIKS KAS (NAMA OTOMATIS KEGABUNG 1 BARIS!)
   const exportToMatrixExcel = (transactions, periodLabel) => {
     try {
       if (!transactions || transactions.length === 0) return
@@ -158,7 +162,7 @@ export const useExportReport = () => {
         ['--- REKAPITULASI SAMPING-BERDAMPINGAN (SIDE-BY-SIDE) ---']
       ]
 
-      const tableHeader = [['No', 'Nama Anggota / Keterangan', 'Kategori', 'Tipe', ...monthHeaders, 'Total Kumulatif']]
+      const tableHeader = [['No', 'Nama Anggota / Keterangan', 'Kategori Terakhir', 'Tipe', ...monthHeaders, 'Total Kumulatif']]
 
       let no = 1
       const tableRows = []
@@ -184,7 +188,6 @@ export const useExportReport = () => {
       const headerRowIndex = 5
       const range = XLSX.utils.decode_range(worksheet['!ref'])
 
-      // Pewarnaan Header Biru Navy Modern (Sesuai Gambar Contoh!)
       for (let R = range.s.r; R <= range.e.r; ++R) {
         for (let C = range.s.c; C <= range.e.c; ++C) {
           const cellAddress = XLSX.utils.encode_cell({ r: R, c: C })
@@ -192,7 +195,7 @@ export const useExportReport = () => {
 
           if (R === headerRowIndex) {
             worksheet[cellAddress].s = {
-              fill: { fgColor: { rgb: '1E3A8A' } }, // Biru Navy Elegan
+              fill: { fgColor: { rgb: '1E3A8A' } },
               font: { name: 'Arial', sz: 11, bold: true, color: { rgb: 'FFFFFF' } },
               alignment: { vertical: 'center', horizontal: 'center' }
             }
@@ -210,27 +213,26 @@ export const useExportReport = () => {
 
       worksheet['!cols'] = [
         { wch: 6 },  // No
-        { wch: 32 }, // Nama
+        { wch: 30 }, // Nama Anggota (Bersih)
         { wch: 20 }, // Kategori
         { wch: 15 }, // Tipe
-        ...monthHeaders.map(() => ({ wch: 18 })), // Kolom Bulan Samping-Samping
+        ...monthHeaders.map(() => ({ wch: 18 })), // Kolom Bulan
         { wch: 22 }  // Total
       ]
 
       const workbook = XLSX.utils.book_new()
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Rekapitulasi Matriks')
       XLSX.writeFile(workbook, `Rekapitulasi_Matriks_Kas_${(periodLabel || 'Semua').replace(/\s+/g, '_')}.xlsx`)
-      toast.add({ title: 'Berhasil!', description: 'Excel Matriks Side-by-Side berhasil diunduh.', color: 'success' })
+      toast.add({ title: 'Berhasil!', description: 'Excel Matriks Nama Kegabung berhasil diunduh.', color: 'success' })
     } catch (e) { toast.add({ title: 'Gagal', description: e.message, color: 'error' }) }
   }
 
-  // 📑 4. PDF REKAPITULASI MATRIKS KAS (LANDSCAPE SIDE-BY-SIDE)
+  // 📑 4. PDF REKAPITULASI MATRIKS KAS (LANDSCAPE NAMA OTOMATIS KEGABUNG!)
   const exportToMatrixPDF = (transactions, periodLabel) => {
     try {
       if (!transactions || transactions.length === 0) return
       const { sortedMonthKeys, monthHeaders, rowsMap } = buildMatrixData(transactions)
 
-      // Menggunakan Format Orientasi LANDSCAPE (Melebar Ke Samping)
       const doc = new jsPDF({ orientation: 'landscape' })
 
       doc.setFont('helvetica', 'bold').setFontSize(16).setTextColor(15, 23, 42)
@@ -239,7 +241,7 @@ export const useExportReport = () => {
       doc.text(`Periode: ${periodLabel || '-'} | Dicetak: ${new Date().toLocaleDateString('id-ID')}`, 14, 24)
       doc.setLineWidth(0.5).setDrawColor(226, 232, 240).line(14, 28, 283, 28)
 
-      const headers = [['No', 'Nama / Keterangan', 'Kategori', ...monthHeaders, 'Total']]
+      const headers = [['No', 'Nama Anggota', 'Kategori', ...monthHeaders, 'Total']]
       let no = 1
       const rows = []
       rowsMap.forEach((data, rowKey) => {
@@ -270,7 +272,7 @@ export const useExportReport = () => {
       })
 
       doc.save(`Rekapitulasi_Matriks_Kas_${(periodLabel || 'Semua').replace(/\s+/g, '_')}.pdf`)
-      toast.add({ title: 'Berhasil!', description: 'PDF Matriks Side-by-Side berhasil diunduh.', color: 'success' })
+      toast.add({ title: 'Berhasil!', description: 'PDF Matriks Nama Kegabung berhasil diunduh.', color: 'success' })
     } catch (e) { toast.add({ title: 'Gagal', description: e.message, color: 'error' }) }
   }
 
