@@ -241,7 +241,7 @@ export const useExportReport = () => {
       doc.text(`Periode: ${periodLabel || '-'} | Dicetak: ${new Date().toLocaleDateString('id-ID')}`, 14, 24)
       doc.setLineWidth(0.5).setDrawColor(226, 232, 240).line(14, 28, 283, 28)
 
-      const headers = [['No', 'Nama Anggota / Keterangan', 'Kategori', ...monthHeaders, 'Total']]
+      const headers = [['No', 'Nama Anggota / Keterangan', 'Kategori Terakhir', ...monthHeaders, 'Total']]
       let no = 1
       const rows = []
       rowsMap.forEach((data, rowKey) => {
