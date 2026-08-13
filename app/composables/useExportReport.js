@@ -5,7 +5,6 @@ import autoTable from 'jspdf-autotable'
 export const useExportReport = () => {
   const toast = useToast()
 
-  // Format Rupiah resmi untuk laporan
   const formatRupiah = (val) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -14,20 +13,49 @@ export const useExportReport = () => {
     }).format(val || 0)
   }
 
-  // 📊 1. EKSPOR KE EXCEL BERWARNA (.xlsx)
-  const exportToExcel = (transactions, periodLabel, totals) => {
-    try {
-      if (!transactions || transactions.length === 0) {
-        toast.add({
-          title: 'Gagal',
-          description: 'Tidak ada data transaksi untuk diekspor!',
-          color: 'error',
-          icon: 'i-heroicons-x-circle'
-        })
-        return
+  // 🧠 FUNGSI PEMBANTU: Mengolah data transaksi mentah menjadi Struktur Matriks (Side-by-Side)
+  const buildMatrixData = (transactions) => {
+    const monthsMap = new Map() // Penampung kolom bulan unik (misal: Mei 2026, Juni 2026, dst)
+    const rowsMap = new Map()   // Penampung baris unik berdasarkan Nama/Keterangan
+
+    transactions.forEach((t) => {
+      if (!t.created_at) return
+      const dateObj = new Date(t.created_at)
+      
+      // Kunci Bulan YYYY-MM
+      const monthKey = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`
+      const monthLabel = dateObj.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' })
+
+      if (!monthsMap.has(monthKey)) {
+        monthsMap.set(monthKey, monthLabel)
       }
 
-      // Header Ringkasan Atas
+      // Kunci Baris (Nama Orang / Keterangan)
+      const rowKey = t.description ? t.description.trim() : 'Tanpa Keterangan'
+
+      if (!rowsMap.has(rowKey)) {
+        rowsMap.set(rowKey, {
+          category: t.category ? t.category.toUpperCase() : '-',
+          type: t.type?.toLowerCase() === 'income' ? 'Pemasukan' : 'Pengeluaran',
+          months: {}
+        })
+      }
+
+      const rowData = rowsMap.get(rowKey)
+      rowData.months[monthKey] = (rowData.months[monthKey] || 0) + Number(t.amount)
+    })
+
+    // Urutkan kolom bulan dari paling lama ke paling baru
+    const sortedMonthKeys = Array.from(monthsMap.keys()).sort()
+    const monthHeaders = sortedMonthKeys.map((k) => monthsMap.get(k))
+
+    return { sortedMonthKeys, monthHeaders, rowsMap }
+  }
+
+  // 📊 1. EXCEL DETAIL TRANSAKSI (Kronologis)
+  const exportToExcel = (transactions, periodLabel, totals) => {
+    try {
+      if (!transactions || transactions.length === 0) return
       const summaryData = [
         ['FTRACKER - LAPORAN KEUANGAN RESMI'],
         [`PERIODE: ${periodLabel?.toUpperCase() || '-'}`],
@@ -40,11 +68,7 @@ export const useExportReport = () => {
         [],
         ['--- DETAIL TRANSAKSI ---']
       ]
-
-      // Header Tabel Data
       const tableHeader = [['Tanggal', 'Keterangan / Nama', 'Kategori', 'Tipe Transaksi', 'Nominal (IDR)']]
-
-      // Isi Data Transaksi
       const tableRows = transactions.map((t) => [
         t.created_at ? t.created_at.split('T')[0] : '-',
         t.description || '-',
@@ -53,145 +77,55 @@ export const useExportReport = () => {
         formatRupiah(t.amount)
       ])
 
-      const fullData = [...summaryData, ...tableHeader, ...tableRows]
-
-      // Buat Sheet Excel
-      const worksheet = XLSX.utils.aoa_to_sheet(fullData)
-
-      // 🟢 FITUR PEWARNAAN & STYLING EXCEL (MEWARNAI TABEL)
-      const headerRowIndex = 10 // Baris Header Tabel
+      const worksheet = XLSX.utils.aoa_to_sheet([...summaryData, ...tableHeader, ...tableRows])
+      const headerRowIndex = 10
       const range = XLSX.utils.decode_range(worksheet['!ref'])
 
       for (let R = range.s.r; R <= range.e.r; ++R) {
         for (let C = range.s.c; C <= range.e.c; ++C) {
           const cellAddress = XLSX.utils.encode_cell({ r: R, c: C })
           if (!worksheet[cellAddress]) continue
-
-          // 1. Warna Header Tabel (Hijau Emerald + Teks Putih Tebal)
           if (R === headerRowIndex) {
             worksheet[cellAddress].s = {
-              fill: { fgColor: { rgb: '10B981' } }, // Hijau Primary FTracker
+              fill: { fgColor: { rgb: '10B981' } },
               font: { name: 'Arial', sz: 11, bold: true, color: { rgb: 'FFFFFF' } },
-              alignment: { vertical: 'center', horizontal: 'center' },
-              border: {
-                top: { style: 'thin', color: { rgb: '059669' } },
-                bottom: { style: 'medium', color: { rgb: '059669' } }
-              }
+              alignment: { vertical: 'center', horizontal: 'center' }
             }
-          }
-          // 2. Warna Baris Data Transaksi (Baris Selang-Seling + Border Tipis)
-          else if (R > headerRowIndex) {
+          } else if (R > headerRowIndex) {
             const isEven = R % 2 === 0
             worksheet[cellAddress].s = {
-              fill: { fgColor: { rgb: isEven ? 'F8FAFC' : 'FFFFFF' } }, // Abu-abu muda selang-seling
+              fill: { fgColor: { rgb: isEven ? 'F8FAFC' : 'FFFFFF' } },
               font: { name: 'Arial', sz: 10, color: { rgb: '0F172A' } },
-              alignment: {
-                vertical: 'center',
-                horizontal: C === 4 ? 'right' : (C === 0 ? 'center' : 'left') // Nominal rata kanan, tanggal rata tengah
-              },
-              border: {
-                top: { style: 'thin', color: { rgb: 'E2E8F0' } },
-                bottom: { style: 'thin', color: { rgb: 'E2E8F0' } },
-                left: { style: 'thin', color: { rgb: 'E2E8F0' } },
-                right: { style: 'thin', color: { rgb: 'E2E8F0' } }
-              }
-            }
-          }
-          // 3. Warna Judul Atas
-          else {
-            if (R === 0) {
-              worksheet[cellAddress].s = {
-                font: { name: 'Arial', sz: 14, bold: true, color: { rgb: '0F172A' } }
-              }
-            } else if (R === 4 || R === 9) {
-              worksheet[cellAddress].s = {
-                font: { name: 'Arial', sz: 11, bold: true, color: { rgb: '10B981' } }
-              }
+              alignment: { vertical: 'center', horizontal: C === 4 ? 'right' : (C === 0 ? 'center' : 'left') },
+              border: { top: { style: 'thin', color: { rgb: 'E2E8F0' } }, bottom: { style: 'thin', color: { rgb: 'E2E8F0' } }, left: { style: 'thin', color: { rgb: 'E2E8F0' } }, right: { style: 'thin', color: { rgb: 'E2E8F0' } } }
             }
           }
         }
       }
-
-      // Lebar Kolom Otomatis
-      worksheet['!cols'] = [
-        { wch: 15 }, // Tanggal
-        { wch: 38 }, // Keterangan
-        { wch: 36 }, // Kategori
-        { wch: 18 }, // Tipe
-        { wch: 22 }  // Nominal
-      ]
-
-      // Buat Workbook
+      worksheet['!cols'] = [{ wch: 15 }, { wch: 38 }, { wch: 22 }, { wch: 18 }, { wch: 22 }]
       const workbook = XLSX.utils.book_new()
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Laporan Keuangan')
-
-      const safeLabel = (periodLabel || 'Semua').replace(/\s+/g, '_')
-      const fileName = `Laporan_Keuangan_${safeLabel}.xlsx`
-
-      XLSX.writeFile(workbook, fileName)
-
-      toast.add({
-        title: 'Berhasil!',
-        description: 'Berkas Laporan Excel Berwarna berhasil diunduh.',
-        color: 'success',
-        icon: 'i-heroicons-check-circle'
-      })
-    } catch (error) {
-      console.error('Error export excel:', error)
-      toast.add({
-        title: 'Gagal Ekspor',
-        description: error.message,
-        color: 'error',
-        icon: 'i-heroicons-exclamation-circle'
-      })
-    }
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Detail Transaksi')
+      XLSX.writeFile(workbook, `Laporan_Detail_${(periodLabel || 'Semua').replace(/\s+/g, '_')}.xlsx`)
+      toast.add({ title: 'Berhasil!', description: 'Excel Detail diunduh.', color: 'success' })
+    } catch (e) { toast.add({ title: 'Gagal', description: e.message, color: 'error' }) }
   }
 
-  // 📄 2. EKSPOR KE PDF LAPORAN RESMI (.pdf)
+  // 📄 2. PDF DETAIL TRANSAKSI
   const exportToPDF = (transactions, periodLabel, totals) => {
     try {
-      if (!transactions || transactions.length === 0) {
-        toast.add({
-          title: 'Gagal',
-          description: 'Tidak ada data transaksi untuk diekspor!',
-          color: 'error',
-          icon: 'i-heroicons-x-circle'
-        })
-        return
-      }
-
+      if (!transactions || transactions.length === 0) return
       const doc = new jsPDF()
-
-      // Header Laporan PDF
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(18)
-      doc.setTextColor(15, 23, 42)
-      doc.text('FTracker - LAPORAN KEUANGAN', 14, 20)
-
-      doc.setFontSize(10)
-      doc.setFont('helvetica', 'normal')
-      doc.setTextColor(100)
-      doc.text(`Periode Laporan : ${periodLabel || '-'}`, 14, 27)
-      doc.text(`Tanggal Dicetak : ${new Date().toLocaleDateString('id-ID')}`, 14, 32)
-
-      // Garis Pembatas Header
-      doc.setLineWidth(0.5)
-      doc.setDrawColor(226, 232, 240)
-      doc.line(14, 36, 196, 36)
-
-      // Ringkasan Keuangan Box
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(11)
-      doc.setTextColor(15, 23, 42)
-      doc.text('Ringkasan Kas Periode Ini:', 14, 44)
-
-      doc.setFontSize(10)
-      doc.setFont('helvetica', 'normal')
+      doc.setFont('helvetica', 'bold').setFontSize(18).setTextColor(15, 23, 42).text('FTracker - LAPORAN KEUANGAN', 14, 20)
+      doc.setFontSize(10).setFont('helvetica', 'normal').setTextColor(100)
+      doc.text(`Periode : ${periodLabel || '-'}`, 14, 27)
+      doc.text(`Dicetak : ${new Date().toLocaleDateString('id-ID')}`, 14, 32)
+      doc.setLineWidth(0.5).setDrawColor(226, 232, 240).line(14, 36, 196, 36)
+      doc.setFont('helvetica', 'bold').setFontSize(11).setTextColor(15, 23, 42).text('Ringkasan Kas Periode Ini:', 14, 44)
+      doc.setFontSize(10).setFont('helvetica', 'normal')
       doc.text(`• Total Pemasukan   : ${formatRupiah(totals?.incomeTotal)}`, 14, 51)
       doc.text(`• Total Pengeluaran : ${formatRupiah(totals?.expenseTotal)}`, 14, 57)
       doc.text(`• Sisa Saldo Kas     : ${formatRupiah(totals?.balanceTotal)}`, 14, 63)
 
-      // Tabel Transaksi AutoTable PDF
       const headers = [['Tanggal', 'Keterangan', 'Kategori', 'Tipe', 'Nominal']]
       const rows = transactions.map((t) => [
         t.created_at ? t.created_at.split('T')[0] : '-',
@@ -202,47 +136,148 @@ export const useExportReport = () => {
       ])
 
       autoTable(doc, {
-        startY: 70,
+        startY: 70, head: headers, body: rows, theme: 'striped',
+        headStyles: { fillColor: [16, 185, 129], textColor: [255, 255, 255], fontStyle: 'bold' }
+      })
+      doc.save(`Laporan_Detail_${(periodLabel || 'Semua').replace(/\s+/g, '_')}.pdf`)
+      toast.add({ title: 'Berhasil!', description: 'PDF Detail diunduh.', color: 'success' })
+    } catch (e) { toast.add({ title: 'Gagal', description: e.message, color: 'error' }) }
+  }
+
+  // 📈 3. EXCEL REKAPITULASI MATRIKS KAS (SIDE-BY-SIDE SAMPING-BERDAMPINGAN PERSIS GAMBAR CONTOH!)
+  const exportToMatrixExcel = (transactions, periodLabel) => {
+    try {
+      if (!transactions || transactions.length === 0) return
+      const { sortedMonthKeys, monthHeaders, rowsMap } = buildMatrixData(transactions)
+
+      const summaryData = [
+        ['REKAPITULASI PEMBAYARAN KAS ANGGOTA (MATRIKS)'],
+        [`PERIODE LAPORAN: ${periodLabel?.toUpperCase() || '-'}`],
+        [`TANGGAL CETAK: ${new Date().toLocaleDateString('id-ID')}`],
+        [],
+        ['--- REKAPITULASI SAMPING-BERDAMPINGAN (SIDE-BY-SIDE) ---']
+      ]
+
+      const tableHeader = [['No', 'Nama Anggota / Keterangan', 'Kategori', 'Tipe', ...monthHeaders, 'Total Kumulatif']]
+
+      let no = 1
+      const tableRows = []
+      rowsMap.forEach((data, rowKey) => {
+        let rowTotal = 0
+        const monthCells = sortedMonthKeys.map((mKey) => {
+          const amt = data.months[mKey] || 0
+          rowTotal += amt
+          return amt > 0 ? formatRupiah(amt) : '-'
+        })
+
+        tableRows.push([
+          no++,
+          rowKey,
+          data.category,
+          data.type,
+          ...monthCells,
+          formatRupiah(rowTotal)
+        ])
+      })
+
+      const worksheet = XLSX.utils.aoa_to_sheet([...summaryData, ...tableHeader, ...tableRows])
+      const headerRowIndex = 5
+      const range = XLSX.utils.decode_range(worksheet['!ref'])
+
+      // Pewarnaan Header Biru Navy Modern (Sesuai Gambar Contoh!)
+      for (let R = range.s.r; R <= range.e.r; ++R) {
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+          const cellAddress = XLSX.utils.encode_cell({ r: R, c: C })
+          if (!worksheet[cellAddress]) continue
+
+          if (R === headerRowIndex) {
+            worksheet[cellAddress].s = {
+              fill: { fgColor: { rgb: '1E3A8A' } }, // Biru Navy Elegan
+              font: { name: 'Arial', sz: 11, bold: true, color: { rgb: 'FFFFFF' } },
+              alignment: { vertical: 'center', horizontal: 'center' }
+            }
+          } else if (R > headerRowIndex) {
+            const isEven = R % 2 === 0
+            worksheet[cellAddress].s = {
+              fill: { fgColor: { rgb: isEven ? 'F1F5F9' : 'FFFFFF' } },
+              font: { name: 'Arial', sz: 10, color: { rgb: '0F172A' } },
+              alignment: { vertical: 'center', horizontal: C >= 4 ? 'center' : (C === 0 ? 'center' : 'left') },
+              border: { top: { style: 'thin', color: { rgb: 'CBD5E1' } }, bottom: { style: 'thin', color: { rgb: 'CBD5E1' } }, left: { style: 'thin', color: { rgb: 'CBD5E1' } }, right: { style: 'thin', color: { rgb: 'CBD5E1' } } }
+            }
+          }
+        }
+      }
+
+      worksheet['!cols'] = [
+        { wch: 6 },  // No
+        { wch: 32 }, // Nama
+        { wch: 20 }, // Kategori
+        { wch: 15 }, // Tipe
+        ...monthHeaders.map(() => ({ wch: 18 })), // Kolom Bulan Samping-Samping
+        { wch: 22 }  // Total
+      ]
+
+      const workbook = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Rekapitulasi Matriks')
+      XLSX.writeFile(workbook, `Rekapitulasi_Matriks_Kas_${(periodLabel || 'Semua').replace(/\s+/g, '_')}.xlsx`)
+      toast.add({ title: 'Berhasil!', description: 'Excel Matriks Side-by-Side berhasil diunduh.', color: 'success' })
+    } catch (e) { toast.add({ title: 'Gagal', description: e.message, color: 'error' }) }
+  }
+
+  // 📑 4. PDF REKAPITULASI MATRIKS KAS (LANDSCAPE SIDE-BY-SIDE)
+  const exportToMatrixPDF = (transactions, periodLabel) => {
+    try {
+      if (!transactions || transactions.length === 0) return
+      const { sortedMonthKeys, monthHeaders, rowsMap } = buildMatrixData(transactions)
+
+      // Menggunakan Format Orientasi LANDSCAPE (Melebar Ke Samping)
+      const doc = new jsPDF({ orientation: 'landscape' })
+
+      doc.setFont('helvetica', 'bold').setFontSize(16).setTextColor(15, 23, 42)
+      doc.text('FTracker - REKAPITULASI MATRIKS PEMBAYARAN KAS', 14, 18)
+      doc.setFontSize(9).setFont('helvetica', 'normal').setTextColor(100)
+      doc.text(`Periode: ${periodLabel || '-'} | Dicetak: ${new Date().toLocaleDateString('id-ID')}`, 14, 24)
+      doc.setLineWidth(0.5).setDrawColor(226, 232, 240).line(14, 28, 283, 28)
+
+      const headers = [['No', 'Nama / Keterangan', 'Kategori', ...monthHeaders, 'Total']]
+      let no = 1
+      const rows = []
+      rowsMap.forEach((data, rowKey) => {
+        let rowTotal = 0
+        const monthCells = sortedMonthKeys.map((mKey) => {
+          const amt = data.months[mKey] || 0
+          rowTotal += amt
+          return amt > 0 ? formatRupiah(amt) : '-'
+        })
+
+        rows.push([
+          no++,
+          rowKey,
+          data.category,
+          ...monthCells,
+          formatRupiah(rowTotal)
+        ])
+      })
+
+      autoTable(doc, {
+        startY: 32,
         head: headers,
         body: rows,
-        theme: 'striped',
-        headStyles: {
-          fillColor: [16, 185, 129], // Warna Hijau Primary
-          textColor: [255, 255, 255],
-          fontStyle: 'bold'
-        },
-        styles: {
-          fontSize: 9,
-          cellPadding: 3
-        },
-        alternateRowStyles: {
-          fillColor: [248, 250, 252]
-        }
+        theme: 'grid',
+        headStyles: { fillColor: [30, 58, 138], textColor: [255, 255, 255], fontStyle: 'bold' },
+        styles: { fontSize: 8, cellPadding: 2.5, halign: 'center' },
+        columnStyles: { 1: { halign: 'left' }, 2: { halign: 'left' } }
       })
 
-      const safeLabel = (periodLabel || 'Semua').replace(/\s+/g, '_')
-      const fileName = `Laporan_Keuangan_${safeLabel}.pdf`
-      doc.save(fileName)
-
-      toast.add({
-        title: 'Berhasil!',
-        description: 'Berkas Laporan PDF berhasil diunduh.',
-        color: 'success',
-        icon: 'i-heroicons-check-circle'
-      })
-    } catch (error) {
-      console.error('Error export pdf:', error)
-      toast.add({
-        title: 'Gagal Ekspor',
-        description: error.message,
-        color: 'error',
-        icon: 'i-heroicons-exclamation-circle'
-      })
-    }
+      doc.save(`Rekapitulasi_Matriks_Kas_${(periodLabel || 'Semua').replace(/\s+/g, '_')}.pdf`)
+      toast.add({ title: 'Berhasil!', description: 'PDF Matriks Side-by-Side berhasil diunduh.', color: 'success' })
+    } catch (e) { toast.add({ title: 'Gagal', description: e.message, color: 'error' }) }
   }
 
   return {
     exportToExcel,
-    exportToPDF
+    exportToPDF,
+    exportToMatrixExcel,
+    exportToMatrixPDF
   }
 }

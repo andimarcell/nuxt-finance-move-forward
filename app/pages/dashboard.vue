@@ -243,32 +243,42 @@ const categoryFilterItems = computed(() => {
 });
 
 // Panggil Composable Ekspor Laporan
-const { exportToExcel, exportToPDF } = useExportReport();
+const { exportToExcel, exportToPDF, exportToMatrixExcel, exportToMatrixPDF } = useExportReport()
 
 // Menu Pilihan Dropdown Ekspor
 const exportMenuItems = computed(() => [
   [
     {
-      label: "Unduh Excel (.xlsx)",
-      icon: "i-heroicons-document-text",
-      onSelect: () =>
-        exportToExcel(transactions.value, periodLabel.value, {
-          incomeTotal: incomeTotal.value,
-          expenseTotal: expenseTotal.value,
-          balanceTotal: balanceTotal.value,
-        }),
+      label: '📈 Excel Matriks (Side-by-Side per Bulan)',
+      icon: 'i-heroicons-table-cells',
+      onSelect: () => exportToMatrixExcel(transactions.value, periodLabel.value)
     },
     {
-      label: "Unduh PDF (.pdf)",
-      icon: "i-heroicons-document-arrow-down",
-      onSelect: () =>
-        exportToPDF(transactions.value, periodLabel.value, {
-          incomeTotal: incomeTotal.value,
-          expenseTotal: expenseTotal.value,
-          balanceTotal: balanceTotal.value,
-        }),
-    },
+      label: '📑 PDF Matriks (Side-by-Side per Bulan)',
+      icon: 'i-heroicons-document-chart-bar',
+      onSelect: () => exportToMatrixPDF(transactions.value, periodLabel.value)
+    }
   ],
+  [
+    {
+      label: '📊 Excel Detail Transaksi (Rincian Harian)',
+      icon: 'i-heroicons-document-text',
+      onSelect: () => exportToExcel(transactions.value, periodLabel.value, {
+        incomeTotal: incomeTotal.value,
+        expenseTotal: expenseTotal.value,
+        balanceTotal: balanceTotal.value
+      })
+    },
+    {
+      label: '📄 PDF Detail Transaksi (Rincian Harian)',
+      icon: 'i-heroicons-document-arrow-down',
+      onSelect: () => exportToPDF(transactions.value, periodLabel.value, {
+        incomeTotal: incomeTotal.value,
+        expenseTotal: expenseTotal.value,
+        balanceTotal: balanceTotal.value
+      })
+    }
+  ]
 ]);
 </script>
 
