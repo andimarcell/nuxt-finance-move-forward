@@ -1,4 +1,3 @@
-div
 <script setup>
 import { format } from "date-fns";
 import {
@@ -42,11 +41,12 @@ const isModalOpen = computed({
 });
 
 const isEditing = computed(() => !!props.transaction);
-// Fungsi pembantu mengekstrak string murni dari objek Nuxt UI
+
 const getCategoryValue = (cat) => {
   if (cat && typeof cat === "object") return cat.value;
   return cat;
 };
+
 const autoResize = () => {
   const el = textareaRef.value;
   if (!el) return;
@@ -76,226 +76,7 @@ const formattedAvailableBalance = computed(() => {
   }).format(availableBalance.value);
 });
 
-const fillForm = () => {
-  if (props.transaction) {
-    state.description = props.transaction.description;
-    state.amount = props.transaction.amount;
-    state.type = props.transaction.type.toLowerCase();
-    state.created_at = props.transaction.created_at.split("T")[0];
-    const originalCategory = props.transaction.category?.toLowerCase() || "";
-    if (
-      defaultCategories.map((d) => d.value).includes(originalCategory) &&
-      originalCategory !== "lainnya"
-    ) {
-      state.category = originalCategory;
-      customCategory.value = originalCategory; // Simpan kategori asli jika valid
-    } else {
-      state.category = "lainnya"; // Set ke "lainnya" jika kategori tidak valid
-      customCategory.value = originalCategory; // Simpan kategori kustom yang dimasukkan pengguna
-    }
-  } else {
-    clearForm();
-  }
-};
-
-watch(isModalOpen, (val) => {
-  if (val) {
-    fillForm();
-    nextTick(() => {
-      autoResize();
-    });
-  }
-});
-
-const clearForm = () => {
-  formRef.value?.clear();
-  state.description = "";
-  state.amount = 0;
-  state.type = "income";
-  state.category = ""; // BERSIHKAN KATEGORI
-  customCategory.value = ""; // BERSIHKAN KATEGORI KUSTOM
-  state.created_at = format(new Date(), "yyyy-MM-dd");
-
-  nextTick(() => {
-    autoResize();
-  });
-};
-
-// 1. TAMBAHKAN VALIDASI 'category' PADA SKEMA ZOD
-const schema = z.object({
-  description: z.string().min(1, "Keterangan wajib diisi"),
-  amount: z.number().positive("Nominal harus lebih dari 0"),
-  type: z.enum(["income", "expense"]),
-  category: z.any(), // Validasi kolom kategori // Mengizinkan string maupun objek agar tidak crash
-  created_at: z.string().min(1, "Tanggal wajib diisi"),
-});
-
-// 2. TAMBAHKAN PARAMETER 'category' PADA STATE FORM
-const state = reactive({
-  description: "",
-  amount: 0,
-  type: "income",
-  category: "", // State penampung kategori terpilih
-  category_icon: "",
-  created_at: format(new Date(), "yyyy-MM-dd"),
-});
-
-// Daftar pilihan kategori untuk diisi di dropdown UI
-const defaultCategories = [
-  { label: "Gaji", value: "gaji", icon: "i-heroicons-banknotes" },
-  { label: "Bonus", value: "bonus", icon: "i-heroicons-gift" },
-  { label: "Transportasi", value: "transportasi", icon: "i-heroicons-truck" },
-  { label: "Hiburan", value: "hiburan", icon: "i-heroicons-ticket" },
-  {
-    label: "Pendidikan",
-    value: "pendidikan",
-    icon: "i-heroicons-academic-cap",
-  },
-  { label: "Bulanan", value: "bulanan", icon: "i-heroicons-calendar-days" },
-];
-const customCategory = ref(""); // State untuk kategori kustom yang dimasukkan pengguna
-const customCategories = ref([]); // State untuk kategori kustom yang diambil dari database
-
-onMounted(() => {
-  fetchUserCategories(); // Ambil kategori kustom sekali saja di awal saat halaman dimuat
-});
-
-const fetchUserCategories = async () => {
-  if (!user.value) return;
-
-  try {
-    // Kueri Supabase: Ikut menarik kolom 'category_icon' dari database
-    const { data, error } = await supabase
-      .from("transactions")
-      .select("category, category_icon"); // Tarik kedua kolom ini
-
-    if (error) throw error;
-
-    if (data) {
-      const uniqueMap = {};
-
-      data.forEach((t) => {
-        const cat = t.category ? t.category.toLowerCase().trim() : "";
-        if (
-          cat &&
-          !defaultCategories.map((d) => d.value).includes(cat) &&
-          cat !== "lainnya"
-        ) {
-          // Petakan nama kategori dengan ikon aslinya dari DB (default: i-heroicons-tag)
-          uniqueMap[cat] = t.category_icon || "i-heroicons-tag";
-        }
-      });
-
-      // Masukkan ke customCategories sebagai array objek { name, icon }
-      customCategories.value = Object.keys(uniqueMap).map((cat) => ({
-        name: cat,
-        icon: uniqueMap[cat],
-      }));
-    }
-  } catch (err) {
-    console.error("Gagal mengambil kategori pengguna:", err.message);
-  }
-};
-
-const mergedCategories = computed(() => {
-  // Petakan kategori kustom berdasarkan data objek kustom asli dari DB
-  const mappedCustoms = customCategories.value.map((catObj) => ({
-    label: catObj.name.charAt(0).toUpperCase() + catObj.name.slice(1),
-    value: catObj.name,
-    icon: catObj.icon, // Memakai ikon kustom asli dari DB objek
-  }));
-  // Satukan kategori default, kustom, dan pilihan lainnya
-  return [
-    ...defaultCategories,
-    ...mappedCustoms,
-    {
-      label: "Lainnya",
-      value: "lainnya",
-      icon: "i-heroicons-ellipsis-horizontal",
-    },
-  ];
-});
-
-// Mengontrol kapan sisa kolom input lainnya boleh muncul di layar
-const isCategoryFilled = computed(() => {
-  // Jika ketegori belum dipilih sama sekali, jangan muncuulkan apa-apa
-  if (!state.category) return false;
-  // Jika pilih "lainnya", wajib ketik minimal 3 karakter (1 kata) baru boleh muncul kolom lain
-  if (state.category === "lainnya") {
-    return customCategory.value.trim().length >= 4;
-  }
-  // Jika memilih kategori default lainnya, langsung munculkan kolom lain
-  return true;
-});
-
-async function onSubmit(event) {
-  if (isOverBudget.value) return;
-
-  if (state.category === "lainnya" && !customCategory.value.trim()) {
-    return toast.add({
-      title: "Gagal",
-      description: "Silahkan ketik nama kategori kustom Anda!",
-      color: "error",
-      icon: "i-heroicons-x-circle",
-    });
-  }
-
-  isLoading.value = true;
-  try {
-    let error;
-
-    const payload = { ...state };
-    // Ekstraksi Aman: Ambil string value dari objek kategori Nuxt UI
-    if (state.category && typeof state.category === "object") {
-      payload.category = state.category.value;
-    } else {
-      payload.category = state.category;
-    }
-
-    // Jika memilih 'lainnya', gunakan ketikan kustom & simpan ikon kustom pilihan mereka
-    if (payload.category === "lainnya" && customCategory.value) {
-      payload.category = customCategory.value.toLowerCase().trim();
-      payload.category_icon = customIcon.value; // SIMPAN IKON KUSTOM KE KOLOM BARU DATABASE
-    }
-
-    if (isEditing.value) {
-      const { error: editError } = await supabase
-        .from("transactions")
-        .update(payload)
-        .eq("id", props.transaction.id);
-      error = editError;
-    } else {
-      const { error: insertError } = await supabase
-        .from("transactions")
-        .insert([payload]);
-      error = insertError;
-    }
-    if (error) throw error;
-    await fetchUserCategories();
-    toast.add({
-      title: "Sukses",
-      description: isEditing.value
-        ? "Transaksi berhasil diperbarui!"
-        : "Transaksi berhasil ditambahkan!",
-      color: "success",
-      icon: "i-heroicons-check-circle",
-    });
-
-    isModalOpen.value = false;
-    emit("saved");
-  } catch (e) {
-    toast.add({
-      title: "Error",
-      description: e.message,
-      color: "error",
-      icon: "i-heroicons-x-circle",
-    });
-  } finally {
-    isLoading.value = false;
-  }
-}
-
-// Pilihan ikon-ikon indah yang bisa dipilih mandiri oleh pengguna
+// Pilihan ikon kustom
 const iconOptions = [
   { label: "Tag", value: "i-heroicons-tag", icon: "i-heroicons-tag" },
   {
@@ -320,7 +101,237 @@ const iconOptions = [
     icon: "i-heroicons-rocket-launch",
   },
 ];
-const customIcon = ref("i-heroicons-tag"); // Ikon kustom default
+const customIcon = ref("i-heroicons-tag");
+
+const fillForm = () => {
+  if (props.transaction) {
+    state.description = props.transaction.description;
+    state.amount = props.transaction.amount;
+    state.type = props.transaction.type.toLowerCase();
+    state.created_at = props.transaction.created_at.split("T")[0];
+
+    // 🟢 PERBAIKAN 1: Buka & muat ikon yang tersimpan di DB saat mode Edit
+    if (props.transaction.category_icon) {
+      customIcon.value = props.transaction.category_icon;
+    } else {
+      customIcon.value = "i-heroicons-tag";
+    }
+
+    const originalCategory = props.transaction.category?.toLowerCase() || "";
+    if (
+      defaultCategories.map((d) => d.value).includes(originalCategory) &&
+      originalCategory !== "lainnya"
+    ) {
+      state.category = originalCategory;
+      customCategory.value = originalCategory;
+    } else {
+      state.category = "lainnya";
+      customCategory.value = originalCategory;
+    }
+  } else {
+    clearForm();
+  }
+};
+
+watch(isModalOpen, (val) => {
+  if (val) {
+    fillForm();
+    nextTick(() => {
+      autoResize();
+    });
+  }
+});
+
+const clearForm = () => {
+  formRef.value?.clear();
+  state.description = "";
+  state.amount = 0;
+  state.type = "income";
+  state.category = "";
+  customCategory.value = "";
+  customIcon.value = "i-heroicons-tag"; // Reset ke default
+  state.created_at = format(new Date(), "yyyy-MM-dd");
+
+  nextTick(() => {
+    autoResize();
+  });
+};
+
+const schema = z.object({
+  description: z.string().min(1, "Keterangan wajib diisi"),
+  amount: z.number().positive("Nominal harus lebih dari 0"),
+  type: z.enum(["income", "expense"]),
+  category: z.any(),
+  created_at: z.string().min(1, "Tanggal wajib diisi"),
+});
+
+const state = reactive({
+  description: "",
+  amount: 0,
+  type: "income",
+  category: "",
+  category_icon: "",
+  created_at: format(new Date(), "yyyy-MM-dd"),
+});
+
+const defaultCategories = [
+  { label: "Gaji", value: "gaji", icon: "i-heroicons-banknotes" },
+  { label: "Bonus", value: "bonus", icon: "i-heroicons-gift" },
+  { label: "Transportasi", value: "transportasi", icon: "i-heroicons-truck" },
+  { label: "Hiburan", value: "hiburan", icon: "i-heroicons-ticket" },
+  {
+    label: "Pendidikan",
+    value: "pendidikan",
+    icon: "i-heroicons-academic-cap",
+  },
+  { label: "Bulanan", value: "bulanan", icon: "i-heroicons-calendar-days" },
+];
+const customCategory = ref("");
+const customCategories = ref([]);
+
+onMounted(() => {
+  fetchUserCategories();
+});
+
+const fetchUserCategories = async () => {
+  if (!user.value) return;
+
+  try {
+    const { data, error } = await supabase
+      .from("transactions")
+      .select("category, category_icon");
+
+    if (error) throw error;
+
+    if (data) {
+      const uniqueMap = {};
+
+      data.forEach((t) => {
+        const cat = t.category ? t.category.toLowerCase().trim() : "";
+        if (
+          cat &&
+          !defaultCategories.map((d) => d.value).includes(cat) &&
+          cat !== "lainnya"
+        ) {
+          uniqueMap[cat] = t.category_icon || "i-heroicons-tag";
+        }
+      });
+
+      customCategories.value = Object.keys(uniqueMap).map((cat) => ({
+        name: cat,
+        icon: uniqueMap[cat],
+      }));
+    }
+  } catch (err) {
+    console.error("Gagal mengambil kategori pengguna:", err.message);
+  }
+};
+
+const mergedCategories = computed(() => {
+  const mappedCustoms = customCategories.value.map((catObj) => ({
+    label: catObj.name.charAt(0).toUpperCase() + catObj.name.slice(1),
+    value: catObj.name,
+    icon: catObj.icon,
+  }));
+  return [
+    ...defaultCategories,
+    ...mappedCustoms,
+    {
+      label: "Lainnya",
+      value: "lainnya",
+      icon: "i-heroicons-ellipsis-horizontal",
+    },
+  ];
+});
+
+const isCategoryFilled = computed(() => {
+  if (!state.category) return false;
+  if (state.category === "lainnya") {
+    return customCategory.value.trim().length >= 4;
+  }
+  return true;
+});
+
+async function onSubmit(event) {
+  if (isOverBudget.value) return;
+
+  if (state.category === "lainnya" && !customCategory.value.trim()) {
+    return toast.add({
+      title: "Gagal",
+      description: "Silahkan ketik nama kategori kustom Anda!",
+      color: "error",
+      icon: "i-heroicons-x-circle",
+    });
+  }
+
+  isLoading.value = true;
+  try {
+    let error;
+
+    const payload = { ...state };
+
+    if (state.category && typeof state.category === "object") {
+      payload.category = state.category.value;
+    } else {
+      payload.category = state.category;
+    }
+
+    if (payload.category === "lainnya" && customCategory.value) {
+      payload.category = customCategory.value.toLowerCase().trim();
+    }
+
+    // Selalu simpan ikon pilihan terbaru ke payload
+    payload.category_icon = customIcon.value;
+
+    // 1. Update/Simpan transaksi saat ini
+    if (isEditing.value) {
+      const { error: editError } = await supabase
+        .from("transactions")
+        .update(payload)
+        .eq("id", props.transaction.id);
+      error = editError;
+    } else {
+      const { error: insertError } = await supabase
+        .from("transactions")
+        .insert([payload]);
+      error = insertError;
+    }
+
+    if (error) throw error;
+
+    // 🟢 PERBAIKAN 2: SINKRONISASI MASSAL!
+    // Update SEMUA transaksi yang punya nama kategori sama agar ikonnya ikut berubah seragam!
+    if (payload.category && payload.category_icon) {
+      await supabase
+        .from("transactions")
+        .update({ category_icon: payload.category_icon })
+        .eq("category", payload.category);
+    }
+
+    await fetchUserCategories();
+
+    toast.add({
+      title: "Sukses",
+      description: isEditing.value
+        ? "Transaksi & Ikon Kategori berhasil diperbarui!"
+        : "Transaksi berhasil ditambahkan!",
+      color: "success",
+      icon: "i-heroicons-check-circle",
+    });
+
+    isModalOpen.value = false;
+    emit("saved");
+  } catch (e) {
+    toast.add({
+      title: "Error",
+      description: e.message,
+      color: "error",
+      icon: "i-heroicons-x-circle",
+    });
+  } finally {
+    isLoading.value = false;
+  }
+}
 </script>
 
 <template>
@@ -332,7 +343,6 @@ const customIcon = ref("i-heroicons-tag"); // Ikon kustom default
     :close="{ color: 'neutral', variant: 'ghost', class: 'cursor-pointer' }"
   >
     <template #body>
-      <!-- <TransactionForm @submit="isModalOpen = false" />  -->
       <UForm
         ref="formRef"
         :schema="schema"
@@ -356,7 +366,6 @@ const customIcon = ref("i-heroicons-tag"); // Ikon kustom default
           >
             <template #item="{ item }">
               <div class="flex items-center gap-2">
-                <!-- Merender ikon dinamis di sebelah kiri teks kategori -->
                 <UIcon
                   :name="item.icon"
                   class="w-4 h-4 shrink-0 text-gray-500 dark:text-gray-400"
@@ -386,7 +395,6 @@ const customIcon = ref("i-heroicons-tag"); // Ikon kustom default
           label="Pilih Ikon Kategori Baru"
           required
         >
-          <!-- Tombol Bulat Row Interaktif murni menggunakan div -->
           <div class="flex items-center gap-3 mt-1.5 flex-wrap">
             <button
               v-for="opt in iconOptions"
@@ -429,7 +437,6 @@ const customIcon = ref("i-heroicons-tag"); // Ikon kustom default
             ></textarea>
           </UFormField>
 
-          <!-- Input Nominal -->
           <UFormField label="Nominal" name="amount">
             <UInput
               v-model.number="state.amount"
@@ -462,7 +469,6 @@ const customIcon = ref("i-heroicons-tag"); // Ikon kustom default
             />
           </UFormField>
 
-          <!-- Input Tanggal -->
           <UFormField label="Tanggal" name="created_at">
             <UInput
               v-model="state.created_at"
@@ -472,7 +478,6 @@ const customIcon = ref("i-heroicons-tag"); // Ikon kustom default
             />
           </UFormField>
 
-          <!-- Tombol Simpan -->
           <div class="flex justify-between pt-4">
             <UButton
               type="submit"
