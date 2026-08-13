@@ -36,7 +36,6 @@ const { current, previous } = useSelectedTimePeriod(
   referenceDate,
 );
 
-// Composable memanggil watcher otomatis tanpa mengunci render
 const {
   transactions,
   isLoading,
@@ -118,16 +117,25 @@ const cashColor = computed(() => {
 });
 
 const activeChartType = ref("all");
+const selectedCategory = ref("all");
+const sortBy = ref("date_desc");
+const activeCategory = ref(null);
+
+watch(activeChartType, () => {
+  activeCategory.value = null;
+  selectedCategory.value = "all";
+});
 
 const getCategoryValue = (cat) => {
   if (cat && typeof cat === "object") return cat.value;
   return cat;
 };
 
-const filteredGroupByDate = computed(() => {
-  let grouped = {};
+// 🟢 FILTER PRESISI LENGKAP: Memisahkan data array yang lolos semua kriteria filter
+const filteredTransactionsList = computed(() => {
   const txs = transactions.value || [];
 
+  // A. Filter Tipe Utama (Semua, Pengeluaran, Pemasukan)
   let filtered = txs.filter((transaction) => {
     if (activeChartType.value === "all") {
       if (activeCategory.value) {
@@ -140,24 +148,21 @@ const filteredGroupByDate = computed(() => {
     return transaction.type?.toLowerCase() === activeChartType.value;
   });
 
+  // B. Filter Kategori Dropdown / Klik Grafik
   filtered = filtered.filter((t) => {
     if (activeCategory.value && activeChartType.value !== "all") {
-      return (
-        t.category?.toLowerCase()?.trim() ===
-        activeCategory.value?.toLowerCase()?.trim()
-      );
+      return t.category?.toLowerCase()?.trim() === activeCategory.value?.toLowerCase()?.trim();
     }
-
+    
     const filterValue = getCategoryValue(selectedCategory.value);
-
+    
     if (filterValue !== "all") {
-      return (
-        t.category?.toLowerCase()?.trim() === filterValue?.toLowerCase()?.trim()
-      );
+      return t.category?.toLowerCase()?.trim() === filterValue?.toLowerCase()?.trim();
     }
     return true;
   });
 
+  // C. Pengurutan Data
   filtered.sort((a, b) => {
     const dateA = new Date(a.created_at).getTime();
     const dateB = new Date(b.created_at).getTime();
@@ -171,7 +176,13 @@ const filteredGroupByDate = computed(() => {
     return 0;
   });
 
-  for (const transaction of filtered) {
+  return filtered;
+});
+
+// Grouping Data Harian berdasarkan data yang sudah tersaring
+const filteredGroupByDate = computed(() => {
+  let grouped = {};
+  for (const transaction of filteredTransactionsList.value) {
     const date = new Date(transaction.created_at).toISOString().split("T")[0];
     if (!grouped[date]) grouped[date] = [];
     grouped[date].push(transaction);
@@ -179,19 +190,32 @@ const filteredGroupByDate = computed(() => {
   return grouped;
 });
 
-const activeCategory = ref(null);
+// 🟢 REKAP TOTAL NOMINAL KHUSUS DATA YANG TERSARING (Dynamic Totals)
+const filteredIncomeTotal = computed(() =>
+  filteredTransactionsList.value
+    .filter((t) => t.type?.toLowerCase() === "income")
+    .reduce((sum, t) => sum + Number(t.amount), 0)
+);
 
-watch(activeChartType, () => {
-  activeCategory.value = null;
-  selectedCategory.value = "all";
-});
+const filteredExpenseTotal = computed(() =>
+  filteredTransactionsList.value
+    .filter((t) => t.type?.toLowerCase() === "expense")
+    .reduce((sum, t) => sum + Number(t.amount), 0)
+);
 
-const selectedCategory = ref("all");
-const sortBy = ref("date_desc");
+const filteredBalanceTotal = computed(() =>
+  filteredIncomeTotal.value - filteredExpenseTotal.value
+);
 
-watch(activeChartType, () => {
-  activeCategory.value = null;
-  selectedCategory.value = "all";
+// 🟢 JUDUL DINAMIS UNTUK HEADER EXCEL / PDF
+const activeFilterLabel = computed(() => {
+  const activeCat = getCategoryValue(selectedCategory.value);
+  let catText = activeCat && activeCat !== 'all' ? ` - KATEGORI: ${activeCat.toUpperCase()}` : '';
+  if (activeCategory.value) {
+    catText = ` - KATEGORI: ${activeCategory.value.toUpperCase()}`;
+  }
+  let typeText = activeChartType.value !== 'all' ? ` (${activeChartType.value.toUpperCase()})` : '';
+  return `${periodLabel.value}${typeText}${catText}`;
 });
 
 const activeTotalAmount = computed(() => {
@@ -243,39 +267,39 @@ const categoryFilterItems = computed(() => {
 });
 
 // Panggil Composable Ekspor Laporan
-const { exportToExcel, exportToPDF, exportToMatrixExcel, exportToMatrixPDF } = useExportReport()
+const { exportToExcel, exportToPDF, exportToMatrixExcel, exportToMatrixPDF } = useExportReport();
 
-// Menu Pilihan Dropdown Ekspor
+// 🟢 DROPDOWN EKSPOR SINKRON DENGAN DATA FILTER LAYAR
 const exportMenuItems = computed(() => [
   [
     {
-      label: '📈 Excel Matriks (Side-by-Side per Bulan)',
+      label: '📈 Excel Matriks (Sesuai Filter)',
       icon: 'i-heroicons-table-cells',
-      onSelect: () => exportToMatrixExcel(transactions.value, periodLabel.value)
+      onSelect: () => exportToMatrixExcel(filteredTransactionsList.value, activeFilterLabel.value)
     },
     {
-      label: '📑 PDF Matriks (Side-by-Side per Bulan)',
+      label: '📑 PDF Matriks (Sesuai Filter)',
       icon: 'i-heroicons-document-chart-bar',
-      onSelect: () => exportToMatrixPDF(transactions.value, periodLabel.value)
+      onSelect: () => exportToMatrixPDF(filteredTransactionsList.value, activeFilterLabel.value)
     }
   ],
   [
     {
-      label: '📊 Excel Detail Transaksi (Rincian Harian)',
+      label: '📊 Excel Detail (Sesuai Filter)',
       icon: 'i-heroicons-document-text',
-      onSelect: () => exportToExcel(transactions.value, periodLabel.value, {
-        incomeTotal: incomeTotal.value,
-        expenseTotal: expenseTotal.value,
-        balanceTotal: balanceTotal.value
+      onSelect: () => exportToExcel(filteredTransactionsList.value, activeFilterLabel.value, {
+        incomeTotal: filteredIncomeTotal.value,
+        expenseTotal: filteredExpenseTotal.value,
+        balanceTotal: filteredBalanceTotal.value
       })
     },
     {
-      label: '📄 PDF Detail Transaksi (Rincian Harian)',
+      label: '📄 PDF Detail (Sesuai Filter)',
       icon: 'i-heroicons-document-arrow-down',
-      onSelect: () => exportToPDF(transactions.value, periodLabel.value, {
-        incomeTotal: incomeTotal.value,
-        expenseTotal: expenseTotal.value,
-        balanceTotal: balanceTotal.value
+      onSelect: () => exportToPDF(filteredTransactionsList.value, activeFilterLabel.value, {
+        incomeTotal: filteredIncomeTotal.value,
+        expenseTotal: filteredExpenseTotal.value,
+        balanceTotal: filteredBalanceTotal.value
       })
     }
   ]
@@ -371,7 +395,7 @@ const exportMenuItems = computed(() => [
     </div>
 
     <div
-      class="w-full sm:w-auto mt-4 sm:mt-0 flex justify-center sm:justify-end gap-2"
+      class="w-full sm:w-auto mt-4 sm:mt-0 flex items-center justify-center sm:justify-end gap-2"
     >
       <UDropdownMenu :items="exportMenuItems">
         <UButton
@@ -382,6 +406,7 @@ const exportMenuItems = computed(() => [
           label="Unduh Laporan"
         />
       </UDropdownMenu>
+
       <TransactionModal
         v-model:modelValue="isModalOpen"
         @update:modelValue="refreshAll"
