@@ -2,6 +2,7 @@
 const success = ref(false);
 const email = ref("");
 const password = ref("");
+const showPassword = ref(false); // Untuk toggle visibility password
 const authMode = ref("login");
 const isLoading = ref(false);
 const supabase = useSupabaseClient();
@@ -206,6 +207,7 @@ const handleForgotPassword = async () => {
             v-model="email"
             icon="i-heroicons-envelope"
             :loading="isLoading"
+            class="w-full"
           />
         </UFormField>
 
@@ -217,12 +219,27 @@ const handleForgotPassword = async () => {
           name="password"
         >
           <UInput
-            type="password"
+            :type="showPassword ? 'text' : 'password'"
             placeholder="••••••••"
             v-model="password"
             icon="i-heroicons-lock-closed"
             :loading="isLoading"
-          />
+            class="w-full"
+          >
+            <!-- Tombol Ikon Mata di Sebelah Kanan Input -->
+            <template #trailing>
+              <UButton
+                color="neutral"
+                variant="link"
+                size="xs"
+                :icon="
+                  showPassword ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'
+                "
+                class="cursor-pointer text-gray-400 hover:text-primary p-0"
+                @click="showPassword = !showPassword"
+              />
+            </template>
+          </UInput>
         </UFormField>
 
         <!-- Tombol Submit -->
