@@ -10,8 +10,8 @@ const props = defineProps({
   // 🟢 TAMBAHAN BARU: Menerima status read-only dari dashboard utama
   readOnly: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 });
 const emit = defineEmits(["delete", "edit"]);
 
@@ -32,21 +32,21 @@ const defaultIcons = {
   transportasi: "i-heroicons-truck",
   hiburan: "i-heroicons-ticket",
   pendidikan: "i-heroicons-academic-cap",
-  bulanan: "i-heroicons-calendar-days"
-}
+  bulanan: "i-heroicons-calendar-days",
+};
 const icon = computed(() => {
-  const cat = props.transaction.category?.toLowerCase() || ""
-  
+  const cat = props.transaction.category?.toLowerCase() || "";
+
   if (props.transaction.category_icon) {
-    return props.transaction.category_icon
-  }
-  
-  if (defaultIcons[cat]) {
-    return defaultIcons[cat]
+    return props.transaction.category_icon;
   }
 
-  return "i-heroicons-tag"
-})
+  if (defaultIcons[cat]) {
+    return defaultIcons[cat];
+  }
+
+  return "i-heroicons-tag";
+});
 
 const iconColor = computed(() => {
   if (isIncome.value) {
@@ -63,7 +63,7 @@ const isLoading = ref(false);
 const deleteTransaction = async () => {
   // Guard tambahan untuk keamanan sisi script
   if (props.readOnly) return;
-  
+
   isLoading.value = true;
   try {
     await supabase.from("transactions").delete().eq("id", props.transaction.id);
@@ -103,6 +103,11 @@ const actions = [
     },
   ],
 ];
+// Format nama kategori agar huruf pertamanya Kapital
+const categoryLabel = computed(() => {
+  const cat = props.transaction.category?.trim() || "Lainnya";
+  return cat.charAt(0).toUpperCase() + cat.slice(1);
+});
 </script>
 
 <template>
@@ -142,8 +147,15 @@ const actions = [
               :style="{ width: `${percentOfTotal}%` }"
             ></div>
           </div>
-          
+
           <div class="mt-1 block sm:hidden">
+            <UBadge
+              color="neutral"
+              variant="outline"
+              class="text-[9px] px-1.5 py-0.5 font-medium rounded-md capitalize"
+            >
+              {{ categoryLabel }}
+            </UBadge>
             <UBadge
               color="neutral"
               variant="outline"
@@ -156,6 +168,13 @@ const actions = [
       </div>
 
       <div class="hidden sm:block shrink-0 ml-4">
+        <UBadge
+          color="neutral"
+          variant="outline"
+          class="text-[10px] sm:text-xs px-2 py-0.5 font-medium rounded-md capitalize"
+        >
+          {{ categoryLabel }}
+        </UBadge>
         <UBadge
           color="neutral"
           variant="outline"
