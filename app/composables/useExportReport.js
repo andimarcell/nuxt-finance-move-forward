@@ -13,15 +13,51 @@ export const useExportReport = () => {
     }).format(val || 0);
   };
 
-  // 🧠 FUNGSI PEMBANTU PINTAR: Menggabungkan nama & membuang teks dalam kurung (...)
+  //  FUNGSI PEMBANTU PINTAR: Deteksi Global Anggota Keluar & Penggabungan Baris
   const buildMatrixData = (transactions) => {
     const monthsMap = new Map();
     const rowsMap = new Map();
 
+    // 1. CARI SEMUA NAMA YANG PERNAH DITULIS KELUAR DI BULAN MANAPUN
+    const excludedMembers = new Set();
+    transactions.forEach((t) => {
+      const desc = t.description ? t.description.toLowerCase() : "";
+      const cat = t.category ? t.category.toLowerCase() : "";
+      if (desc.includes("keluar") || cat.includes("keluar")) {
+        const nameClean = t.description
+          ? t.description
+              .replace(/\(.*\)/gi, "")
+              .replace(/keluar/gi, "")
+              .replace(/\s+/g, " ")
+              .trim()
+              .toLowerCase()
+          : "";
+        if (nameClean) excludedMembers.add(nameClean);
+      }
+    });
+
+    // 2. BUAT TABEL MATRIKS & ABAIKAN TOTAL SIAPAPUN YANG ADA DI EXCLUDEDMEMBERS
     transactions.forEach((t) => {
       if (!t.created_at) return;
-      const dateObj = new Date(t.created_at);
 
+      let nameStr = t.description ? t.description : "Tanpa Keterangan";
+      nameStr = nameStr
+        .replace(/\(.*\)/gi, "")
+        .replace(/keluar/gi, "")
+        .replace(/\s+/g, " ")
+        .trim();
+      if (!nameStr)
+        nameStr = t.description ? t.description.trim() : "Tanpa Keterangan";
+
+      const cleanKey = nameStr.charAt(0).toUpperCase() + nameStr.slice(1);
+      const checkKey = nameStr.toLowerCase();
+
+      // ABAIKAN TOTAL JIKA ADA DI DAFTAR ANGGOTA KELUAR
+      if (excludedMembers.has(checkKey)) {
+        return;
+      }
+
+      const dateObj = new Date(t.created_at);
       const monthKey = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, "0")}`;
       const monthLabel = dateObj.toLocaleDateString("id-ID", {
         month: "short",
@@ -32,19 +68,8 @@ export const useExportReport = () => {
         monthsMap.set(monthKey, monthLabel);
       }
 
-      // 🟢 PEMBERSIH NAMA OTOMATIS:
-      // Membuang teks dalam kurung seperti "(tunggak)" atau "(masuk 5 juni)" agar nama otomatis KEGABUNG 1 BARIS!
-      let rawName = t.description
-        ? t.description.replace(/\(.*\)/gi, "").trim()
-        : "Tanpa Keterangan";
-      if (!rawName)
-        rawName = t.description ? t.description.trim() : "Tanpa Keterangan";
-
-      // Membuat huruf depan jadi kapital (misal: "natasha" -> "Natasha")
-      const cleanRowKey = rawName.charAt(0).toUpperCase() + rawName.slice(1);
-
-      if (!rowsMap.has(cleanRowKey)) {
-        rowsMap.set(cleanRowKey, {
+      if (!rowsMap.has(cleanKey)) {
+        rowsMap.set(cleanKey, {
           category: t.category ? t.category.toUpperCase() : "-",
           type:
             t.type?.toLowerCase() === "income" ? "Pemasukan" : "Pengeluaran",
@@ -52,8 +77,7 @@ export const useExportReport = () => {
         });
       }
 
-      const rowData = rowsMap.get(cleanRowKey);
-      // Menjumlahkan nominal jika nama & bulannya sama
+      const rowData = rowsMap.get(cleanKey);
       rowData.months[monthKey] =
         (rowData.months[monthKey] || 0) + Number(t.amount);
     });
@@ -382,7 +406,7 @@ export const useExportReport = () => {
           "Total",
         ],
       ];
-      // URUTKAN NAMA ANGGOTA SESUAI ABJAD (A ke Z)
+      // URUTKAN NAMA ANGGOTA SESUAI ABJAD (A ke Z) UNTUK PDF
       const sortedRowKeys = Array.from(rowsMap.keys()).sort((a, b) =>
         a.localeCompare(b, "id", { sensitivity: "base" }),
       );
