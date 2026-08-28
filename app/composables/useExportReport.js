@@ -13,47 +13,56 @@ export const useExportReport = () => {
     }).format(val || 0);
   };
 
-  //  FUNGSI PEMBANTU PINTAR: Deteksi Global Anggota Keluar & Penggabungan Baris
-  const buildMatrixData = (transactions) => {
+  // FUNGSI PEMBANTU PINTAR: Dual-Role Matrix (Lengkap untuk Admin, Bersih untuk Member)
+  const buildMatrixData = (transactions, includeExcluded = false) => {
     const monthsMap = new Map();
     const rowsMap = new Map();
 
-    // 1. CARI SEMUA NAMA YANG PERNAH DITULIS KELUAR DI BULAN MANAPUN
+    // 1. CARI SEMUA NAMA YANG PERNAH DITULIS KELUAR (Hanya jika Mode Member!)
     const excludedMembers = new Set();
-    transactions.forEach((t) => {
-      const desc = t.description ? t.description.toLowerCase() : "";
-      const cat = t.category ? t.category.toLowerCase() : "";
-      if (desc.includes("keluar") || cat.includes("keluar")) {
-        const nameClean = t.description
-          ? t.description
-              .replace(/\(.*\)/gi, "")
-              .replace(/keluar/gi, "")
-              .replace(/\s+/g, " ")
-              .trim()
-              .toLowerCase()
-          : "";
-        if (nameClean) excludedMembers.add(nameClean);
-      }
-    });
+    if (!includeExcluded) {
+      transactions.forEach((t) => {
+        const desc = t.description ? t.description.toLowerCase() : "";
+        const cat = t.category ? t.category.toLowerCase() : "";
+        if (desc.includes("keluar") || cat.includes("keluar")) {
+          const nameClean = t.description
+            ? t.description
+                .replace(/\(.*\)/gi, "")
+                .replace(/keluar/gi, "")
+                .replace(/\s+/g, " ")
+                .trim()
+                .toLowerCase()
+            : "";
+          if (nameClean) excludedMembers.add(nameClean);
+        }
+      });
+    }
 
-    // 2. BUAT TABEL MATRIKS & ABAIKAN TOTAL SIAPAPUN YANG ADA DI EXCLUDEDMEMBERS
+    // 2. BUAT TABEL MATRIKS
     transactions.forEach((t) => {
       if (!t.created_at) return;
 
       let nameStr = t.description ? t.description : "Tanpa Keterangan";
-      nameStr = nameStr
-        .replace(/\(.*\)/gi, "")
-        .replace(/keluar/gi, "")
-        .replace(/\s+/g, " ")
-        .trim();
+
+      // Jika Mode Member: Bersihkan kurung. Jika Mode Admin: Biarkan catatan asli (keluar) tetap tampil!
+      if (!includeExcluded) {
+        nameStr = nameStr
+          .replace(/\(.*\)/gi, "")
+          .replace(/keluar/gi, "")
+          .replace(/\s+/g, " ")
+          .trim();
+      } else {
+        nameStr = nameStr.trim();
+      }
+
       if (!nameStr)
         nameStr = t.description ? t.description.trim() : "Tanpa Keterangan";
 
       const cleanKey = nameStr.charAt(0).toUpperCase() + nameStr.slice(1);
       const checkKey = nameStr.toLowerCase();
 
-      // ABAIKAN TOTAL JIKA ADA DI DAFTAR ANGGOTA KELUAR
-      if (excludedMembers.has(checkKey)) {
+      // JIKA MODE MEMBER DAN NAMA TERDAFTAR KELUAR -> ABAIKAN
+      if (!includeExcluded && excludedMembers.has(checkKey)) {
         return;
       }
 
@@ -257,12 +266,18 @@ export const useExportReport = () => {
     }
   };
 
-  // 📈 3. EXCEL REKAPITULASI MATRIKS KAS (NAMA OTOMATIS KEGABUNG 1 BARIS!)
-  const exportToMatrixExcel = (transactions, periodLabel) => {
+  //  EXCEL REKAPITULASI MATRIKS (Menerima parameter includeExcluded)
+  const exportToMatrixExcel = (
+    transactions,
+    periodLabel,
+    includeExcluded = false,
+  ) => {
     try {
       if (!transactions || transactions.length === 0) return;
-      const { sortedMonthKeys, monthHeaders, rowsMap } =
-        buildMatrixData(transactions);
+      const { sortedMonthKeys, monthHeaders, rowsMap } = buildMatrixData(
+        transactions,
+        includeExcluded,
+      );
 
       const summaryData = [
         ["REKAPITULASI PEMBAYARAN KAS ANGGOTA (MATRIKS)"],
@@ -378,12 +393,18 @@ export const useExportReport = () => {
     }
   };
 
-  // 📑 4. PDF REKAPITULASI MATRIKS KAS (LANDSCAPE NAMA OTOMATIS KEGABUNG!)
-  const exportToMatrixPDF = (transactions, periodLabel) => {
+  // PDF REKAPITULASI MATRIKS (Menerima parameter includeExcluded)
+  const exportToMatrixPDF = (
+    transactions,
+    periodLabel,
+    includeExcluded = false,
+  ) => {
     try {
       if (!transactions || transactions.length === 0) return;
-      const { sortedMonthKeys, monthHeaders, rowsMap } =
-        buildMatrixData(transactions);
+      const { sortedMonthKeys, monthHeaders, rowsMap } = buildMatrixData(
+        transactions,
+        includeExcluded,
+      );
 
       const doc = new jsPDF({ orientation: "landscape" });
 

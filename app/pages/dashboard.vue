@@ -296,31 +296,33 @@ const categoryFilterItems = computed(() => {
 const { exportToExcel, exportToPDF, exportToMatrixExcel, exportToMatrixPDF } =
   useExportReport();
 
-// 🟢 DROPDOWN EKSPOR SINKRON DENGAN DATA FILTER LAYAR
+// DROPDOWN EKSPOR: Admin dapat data FULL LENGKAP, Member dapat data BERSIH
 const exportMenuItems = computed(() => [
   [
     {
-      label: "📈 Excel Matriks (Sesuai Filter)",
+      label: "Excel Matriks (Sesuai Filter)",
       icon: "i-heroicons-table-cells",
       onSelect: () =>
         exportToMatrixExcel(
           filteredTransactionsList.value,
           activeFilterLabel.value,
+          !isMemberMode,
         ),
     },
     {
-      label: "📑 PDF Matriks (Sesuai Filter)",
+      label: "PDF Matriks (Sesuai Filter)",
       icon: "i-heroicons-document-chart-bar",
       onSelect: () =>
         exportToMatrixPDF(
           filteredTransactionsList.value,
           activeFilterLabel.value,
+          !isMemberMode,
         ),
     },
   ],
   [
     {
-      label: "📊 Excel Detail (Sesuai Filter)",
+      label: "Excel Detail (Sesuai Filter)",
       icon: "i-heroicons-document-text",
       onSelect: () =>
         exportToExcel(filteredTransactionsList.value, activeFilterLabel.value, {
@@ -330,7 +332,7 @@ const exportMenuItems = computed(() => [
         }),
     },
     {
-      label: "📄 PDF Detail (Sesuai Filter)",
+      label: "PDF Detail (Sesuai Filter)",
       icon: "i-heroicons-document-arrow-down",
       onSelect: () =>
         exportToPDF(filteredTransactionsList.value, activeFilterLabel.value, {
