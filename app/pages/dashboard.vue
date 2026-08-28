@@ -151,13 +151,28 @@ const filteredTransactionsList = computed(() => {
   // B. Filter Kategori Dropdown / Klik Grafik
   filtered = filtered.filter((t) => {
     if (activeCategory.value && activeChartType.value !== "all") {
-      return t.category?.toLowerCase()?.trim() === activeCategory.value?.toLowerCase()?.trim();
+      return (
+        t.category?.toLowerCase()?.trim() ===
+        activeCategory.value?.toLowerCase()?.trim()
+      );
     }
-    
+
     const filterValue = getCategoryValue(selectedCategory.value);
-    
+    // LOGIKA PRESET: Jika memilih "Khusus Kas Anggota", hanya ambil kategori berhubungan dengan Kas
+    if (filterValue === "kas_only") {
+      const cat = t.category?.toLowerCase()?.trim() || "";
+      return (
+        cat.includes("kas") ||
+        cat.includes("iuran") ||
+        cat.includes("lunas") ||
+        cat.includes("tunggak") ||
+        cat.includes("kurang")
+      );
+    }
     if (filterValue !== "all") {
-      return t.category?.toLowerCase()?.trim() === filterValue?.toLowerCase()?.trim();
+      return (
+        t.category?.toLowerCase()?.trim() === filterValue?.toLowerCase()?.trim()
+      );
     }
     return true;
   });
@@ -194,27 +209,33 @@ const filteredGroupByDate = computed(() => {
 const filteredIncomeTotal = computed(() =>
   filteredTransactionsList.value
     .filter((t) => t.type?.toLowerCase() === "income")
-    .reduce((sum, t) => sum + Number(t.amount), 0)
+    .reduce((sum, t) => sum + Number(t.amount), 0),
 );
 
 const filteredExpenseTotal = computed(() =>
   filteredTransactionsList.value
     .filter((t) => t.type?.toLowerCase() === "expense")
-    .reduce((sum, t) => sum + Number(t.amount), 0)
+    .reduce((sum, t) => sum + Number(t.amount), 0),
 );
 
-const filteredBalanceTotal = computed(() =>
-  filteredIncomeTotal.value - filteredExpenseTotal.value
+const filteredBalanceTotal = computed(
+  () => filteredIncomeTotal.value - filteredExpenseTotal.value,
 );
 
 // 🟢 JUDUL DINAMIS UNTUK HEADER EXCEL / PDF
 const activeFilterLabel = computed(() => {
   const activeCat = getCategoryValue(selectedCategory.value);
-  let catText = activeCat && activeCat !== 'all' ? ` - KATEGORI: ${activeCat.toUpperCase()}` : '';
+  let catText =
+    activeCat && activeCat !== "all"
+      ? ` - KATEGORI: ${activeCat.toUpperCase()}`
+      : "";
   if (activeCategory.value) {
     catText = ` - KATEGORI: ${activeCategory.value.toUpperCase()}`;
   }
-  let typeText = activeChartType.value !== 'all' ? ` (${activeChartType.value.toUpperCase()})` : '';
+  let typeText =
+    activeChartType.value !== "all"
+      ? ` (${activeChartType.value.toUpperCase()})`
+      : "";
   return `${periodLabel.value}${typeText}${catText}`;
 });
 
@@ -227,6 +248,11 @@ const activeTotalAmount = computed(() => {
 const categoryFilterItems = computed(() => {
   const defaultItems = [
     { label: "Semua Kategori", value: "all", icon: "i-heroicons-squares-2x2" },
+    {
+      label: "Khusus Kas Anggota",
+      value: "kas_only",
+      icon: "i-heroicons-user-group",
+    },
     { label: "Gaji", value: "gaji", icon: "i-heroicons-banknotes" },
     { label: "Bonus", value: "bonus", icon: "i-heroicons-gift" },
     { label: "Transportasi", value: "transportasi", icon: "i-heroicons-truck" },
@@ -267,42 +293,53 @@ const categoryFilterItems = computed(() => {
 });
 
 // Panggil Composable Ekspor Laporan
-const { exportToExcel, exportToPDF, exportToMatrixExcel, exportToMatrixPDF } = useExportReport();
+const { exportToExcel, exportToPDF, exportToMatrixExcel, exportToMatrixPDF } =
+  useExportReport();
 
 // 🟢 DROPDOWN EKSPOR SINKRON DENGAN DATA FILTER LAYAR
 const exportMenuItems = computed(() => [
   [
     {
-      label: '📈 Excel Matriks (Sesuai Filter)',
-      icon: 'i-heroicons-table-cells',
-      onSelect: () => exportToMatrixExcel(filteredTransactionsList.value, activeFilterLabel.value)
+      label: "📈 Excel Matriks (Sesuai Filter)",
+      icon: "i-heroicons-table-cells",
+      onSelect: () =>
+        exportToMatrixExcel(
+          filteredTransactionsList.value,
+          activeFilterLabel.value,
+        ),
     },
     {
-      label: '📑 PDF Matriks (Sesuai Filter)',
-      icon: 'i-heroicons-document-chart-bar',
-      onSelect: () => exportToMatrixPDF(filteredTransactionsList.value, activeFilterLabel.value)
-    }
+      label: "📑 PDF Matriks (Sesuai Filter)",
+      icon: "i-heroicons-document-chart-bar",
+      onSelect: () =>
+        exportToMatrixPDF(
+          filteredTransactionsList.value,
+          activeFilterLabel.value,
+        ),
+    },
   ],
   [
     {
-      label: '📊 Excel Detail (Sesuai Filter)',
-      icon: 'i-heroicons-document-text',
-      onSelect: () => exportToExcel(filteredTransactionsList.value, activeFilterLabel.value, {
-        incomeTotal: filteredIncomeTotal.value,
-        expenseTotal: filteredExpenseTotal.value,
-        balanceTotal: filteredBalanceTotal.value
-      })
+      label: "📊 Excel Detail (Sesuai Filter)",
+      icon: "i-heroicons-document-text",
+      onSelect: () =>
+        exportToExcel(filteredTransactionsList.value, activeFilterLabel.value, {
+          incomeTotal: filteredIncomeTotal.value,
+          expenseTotal: filteredExpenseTotal.value,
+          balanceTotal: filteredBalanceTotal.value,
+        }),
     },
     {
-      label: '📄 PDF Detail (Sesuai Filter)',
-      icon: 'i-heroicons-document-arrow-down',
-      onSelect: () => exportToPDF(filteredTransactionsList.value, activeFilterLabel.value, {
-        incomeTotal: filteredIncomeTotal.value,
-        expenseTotal: filteredExpenseTotal.value,
-        balanceTotal: filteredBalanceTotal.value
-      })
-    }
-  ]
+      label: "📄 PDF Detail (Sesuai Filter)",
+      icon: "i-heroicons-document-arrow-down",
+      onSelect: () =>
+        exportToPDF(filteredTransactionsList.value, activeFilterLabel.value, {
+          incomeTotal: filteredIncomeTotal.value,
+          expenseTotal: filteredExpenseTotal.value,
+          balanceTotal: filteredBalanceTotal.value,
+        }),
+    },
+  ],
 ]);
 </script>
 
