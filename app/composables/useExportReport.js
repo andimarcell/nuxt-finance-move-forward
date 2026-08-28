@@ -13,12 +13,12 @@ export const useExportReport = () => {
     }).format(val || 0);
   };
 
-  // FUNGSI PEMBANTU PINTAR: Dual-Role Matrix (Lengkap untuk Admin, Bersih untuk Member)
+  // FUNGSI PEMBANTU PINTAR: Dual-Role Matrix (Murni Kas Pemasukan untuk Member, Full untuk Admin)
   const buildMatrixData = (transactions, includeExcluded = false) => {
     const monthsMap = new Map();
     const rowsMap = new Map();
 
-    // 1. CARI SEMUA NAMA YANG PERNAH DITULIS KELUAR (Hanya jika Mode Member!)
+    // TAHAP 1: Deteksi Anggota Keluar (Hanya untuk Mode Member)
     const excludedMembers = new Set();
     if (!includeExcluded) {
       transactions.forEach((t) => {
@@ -38,13 +38,36 @@ export const useExportReport = () => {
       });
     }
 
-    // 2. BUAT TABEL MATRIKS
+    // TAHAP 2: Buat Tabel Matriks
     transactions.forEach((t) => {
       if (!t.created_at) return;
 
+      const desc = t.description ? t.description.toLowerCase() : "";
+      const cat = t.category ? t.category.toLowerCase() : "";
+      const type = t.type ? t.type.toLowerCase() : "";
+
+      // ATURAN KHUSUS DOWNLOAD MEMBER (jika includeExcluded === false):
+      if (!includeExcluded) {
+        // 1. HARUS PEMASUKAN SAJA (Abaikan Pengeluaran seperti Hadiah, Bensin, Billing, dll)
+        if (type !== "income") {
+          return;
+        }
+
+        // 2. HARUS KAS ANGGOTA SAJA (Abaikan Talangan, Marketing, Operasional, dll)
+        const isKasCategory =
+          cat.includes("kas") ||
+          cat.includes("iuran") ||
+          cat.includes("lunas") ||
+          cat.includes("tunggak") ||
+          cat.includes("kurang");
+
+        if (!isKasCategory) {
+          return; // Abaikan transaksi non-kas!
+        }
+      }
+
       let nameStr = t.description ? t.description : "Tanpa Keterangan";
 
-      // Jika Mode Member: Bersihkan kurung. Jika Mode Admin: Biarkan catatan asli (keluar) tetap tampil!
       if (!includeExcluded) {
         nameStr = nameStr
           .replace(/\(.*\)/gi, "")

@@ -422,7 +422,6 @@ const exportMenuItems = computed(() => [
   </section>
 
   <section
-    v-if="!isMemberMode"
     class="flex flex-col sm:flex-row ml-1 sm:ml-0 justify-between mb-6 sm:mb-10 gap-2 mt-5"
   >
     <div>
@@ -445,22 +444,24 @@ const exportMenuItems = computed(() => [
           label="Unduh Laporan"
         />
       </UDropdownMenu>
-
-      <TransactionModal
-        v-model:modelValue="isModalOpen"
-        @update:modelValue="refreshAll"
-        @saved="refreshAll"
-        :transaction="selectedTransaction"
-        :currentBalance="balanceTotal"
-      />
-      <UButton
-        icon="i-heroicons-plus-circle"
-        color="neutral"
-        variant="outline"
-        class="cursor-pointer sm:w-auto justify-center"
-        label="Tambah Transaksi"
-        @click="onAddClick"
-      />
+      <!-- 🔒 KHUSUS ADMIN (Sembunyi di Mode Member) -->
+      <template v-if="!isMemberMode">
+        <TransactionModal
+          v-model:modelValue="isModalOpen"
+          @update:modelValue="refreshAll"
+          @saved="refreshAll"
+          :transaction="selectedTransaction"
+          :currentBalance="balanceTotal"
+        />
+        <UButton
+          icon="i-heroicons-plus-circle"
+          color="neutral"
+          variant="outline"
+          class="cursor-pointer sm:w-auto justify-center"
+          label="Tambah Transaksi"
+          @click="onAddClick"
+        />
+      </template>
     </div>
   </section>
 
