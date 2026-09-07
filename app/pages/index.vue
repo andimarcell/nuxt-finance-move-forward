@@ -27,14 +27,14 @@ const ctaLabel = computed(() => {
     <UBadge
       color="primary"
       variant="subtle"
-      class="mb-6 rounded-full px-4 py-1.5 text-xs sm:text-sm font-semibold tracking-wide shadow-sm"
+      class="mb-6 rounded-full px-4 py-1.5 text-xs sm:text-sm font-semibold tracking-wide shadow-sm animate-fade-in-up"
     >
       Solusi Pintar Keuangan Pribadi & Komunitas
     </UBadge>
 
     <!-- Headline Utama -->
     <h1
-      class="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight leading-tight mb-6 text-gray-900 dark:text-white"
+      class="text-4xl sm:text-6xl md:text-7xl font-extrabold tracking-tight leading-tight mb-6 text-gray-900 dark:text-white animate-fade-in-up animate-delay-100"
     >
       Kelola Arus Kas & <br class="hidden md:block" />
       <span class="text-primary">Akuntabilitas Keuangan.</span>
@@ -42,7 +42,7 @@ const ctaLabel = computed(() => {
 
     <!-- Sub-Headline Komersial -->
     <p
-      class="text-base sm:text-xl text-gray-600 dark:text-gray-300 max-w-2xl mb-10 leading-relaxed font-normal"
+      class="text-base sm:text-xl text-gray-600 dark:text-gray-300 max-w-2xl mb-10 leading-relaxed font-normal animate-fade-in-up animate-delay-200"
     >
       FTracker membantu Anda mencatat pemasukan, mengendalikan pengeluaran
       harian, serta menyajikan portal akuntabilitas kas real-time yang aman dan
@@ -50,7 +50,7 @@ const ctaLabel = computed(() => {
     </p>
 
     <!-- Call to Action (CTA) Button -->
-    <div class="flex flex-col sm:flex-row items-center gap-4 mb-16">
+    <div class="flex flex-col sm:flex-row items-center gap-4 mb-16 animate-fade-in-up animate-delay-300">
       <UButton
         :to="ctaDestination"
         size="xl"
@@ -69,7 +69,7 @@ const ctaLabel = computed(() => {
       class="grid grid-cols-1 md:grid-cols-3 gap-6 text-left max-w-5xl w-full mb-16"
     >
       <div
-        class="p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm hover:border-primary/50 transition duration-300"
+        class="p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm hover:border-primary/50 transition duration-300 animate-fade-in-up animate-delay-400"
       >
         <div
           class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4 text-primary"
@@ -86,7 +86,7 @@ const ctaLabel = computed(() => {
       </div>
 
       <div
-        class="p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm hover:border-primary/50 transition duration-300"
+        class="p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm hover:border-primary/50 transition duration-300 animate-fade-in-up animate-delay-500"
       >
         <div
           class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4 text-primary"
@@ -103,7 +103,7 @@ const ctaLabel = computed(() => {
       </div>
 
       <div
-        class="p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm hover:border-primary/50 transition duration-300"
+        class="p-6 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm hover:border-primary/50 transition duration-300 animate-fade-in-up animate-delay-600"
       >
         <div
           class="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4 text-primary"
@@ -122,7 +122,7 @@ const ctaLabel = computed(() => {
 
     <!-- MOCKUP DASHBOARD LAPTOP -->
     <div
-      class="hidden md:block w-full max-w-5xl rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden transform transition hover:scale-[1.01] duration-300"
+      class="hidden md:block w-full max-w-5xl rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden transform transition hover:scale-[1.01] duration-300 animate-scale-in animate-delay-500"
     >
       <div
         class="bg-gray-100 dark:bg-gray-900 p-3 border-b border-gray-200 dark:border-gray-800 flex space-x-2"
@@ -142,7 +142,7 @@ const ctaLabel = computed(() => {
 
     <!-- MOCKUP DASHBOARD HP -->
     <div
-      class="block md:hidden mt-6 w-72 rounded-[40px] border-8 border-gray-800 dark:border-gray-950 shadow-2xl overflow-hidden relative aspect-9/19 bg-white dark:bg-gray-900 transform transition hover:scale-[1.02] duration-300"
+      class="block md:hidden mt-6 w-72 rounded-[40px] border-8 border-gray-800 dark:border-gray-950 shadow-2xl overflow-hidden relative aspect-9/19 bg-white dark:bg-gray-900 transform transition hover:scale-[1.02] duration-300 animate-scale-in animate-delay-500"
     >
       <div
         class="absolute top-2 left-1/2 transform -translate-x-1/2 w-28 h-5 bg-gray-800 dark:bg-gray-950 rounded-full z-20 flex items-center justify-center"
