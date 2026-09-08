@@ -6,6 +6,11 @@ export default defineNuxtConfig({
   // Tetap aktifkan SSR untuk Vercel Web, tapi matikan SSR hanya saat build APK Mobile
   ssr: !isMobileBuild,
 
+  app: {
+    pageTransition: { name: 'page-fade', mode: 'out-in' },
+    layoutTransition: { name: 'page-fade', mode: 'out-in' }
+  },
+
   modules: ["@nuxt/ui", "@nuxtjs/supabase"],
   compatibilityDate: "2025-07-15",
   devtools: { enabled: true },

@@ -70,6 +70,21 @@
     animation-delay: 600ms;
   }
 
+  .page-fade-enter-active,
+  .page-fade-leave-active {
+    transition: opacity 0.25s ease;
+  }
+
+  .page-fade-enter-from,
+  .page-fade-leave-to {
+    opacity: 0;
+  }
+
+  .page-fade-leave-active {
+    position: absolute;
+    width: 100%;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .animate-fade-in-up,
     .animate-fade-in,
@@ -79,7 +94,9 @@
     .animate-delay-300,
     .animate-delay-400,
     .animate-delay-500,
-    .animate-delay-600 {
+    .animate-delay-600,
+    .page-fade-enter-active,
+    .page-fade-leave-active {
       animation: none !important;
       transition: none !important;
     }
