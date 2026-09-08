@@ -6,8 +6,17 @@
 }
 
 @layer base {
+  html {
+    overscroll-behavior-y: none;
+  }
   body {
     @apply bg-white dark:bg-gray-900;
+    overscroll-behavior-y: none;
+  }
+
+  .overflow-y-auto,
+  .overflow-auto {
+    overscroll-behavior: contain;
   }
 }
 
