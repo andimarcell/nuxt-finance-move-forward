@@ -346,211 +346,213 @@ const exportMenuItems = computed(() => [
 </script>
 
 <template>
-  <section
-    class="flex flex-col items-center sm:flex-row sm:items-center justify-between mb-8 sm:mb-10 gap-4"
-  >
-    <h1 class="text-3xl sm:text-4xl font-extrabold">Ringkasan</h1>
-
-    <div class="flex items-center justify-between sm:justify-start">
-      <div class="flex items-center space-x-2">
-        <UButton
-          icon="i-heroicons-chevron-left"
-          variant="ghost"
-          @click="prevPeriod"
-        />
-        <span
-          class="font-bold text-base sm:text-lg min-w-25 sm:min-w-32 text-center"
-          >{{ periodLabel }}</span
-        >
-        <UButton
-          icon="i-heroicons-chevron-right"
-          variant="ghost"
-          @click="nextPeriod"
-        />
-      </div>
-    </div>
-
-    <div class="mt-2 sm:mt-0">
-      <USelect v-model="selectedView" :items="transactionViewsItems" />
-    </div>
-  </section>
-
-  <section
-    class="grid text-sm grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 sm:gap-16 mb-10 gap-8 ml-1 sm:ml-0"
-  >
-    <Trend
-      title="Pemasukan"
-      :amount="incomeTotal"
-      :lastAmount="previousIncomeTotal"
-      :loading="isLoading"
-      :color="incomeStatusColor"
-    />
-    <Trend
-      title="Pengeluaran"
-      :amount="expenseTotal"
-      :lastAmount="previousExpenseTotal"
-      :loading="isLoading"
-      :color="expenseStatusColor"
-    />
-    <Trend
-      title="Tabungan"
-      :amount="savingsTotal"
-      :lastAmount="previousSavingsTotal"
-      :loading="isLoading"
-      :color="savingsStatusColor"
-    />
-    <Trend
-      title="Total Saldo"
-      :amount="balanceTotal"
-      :lastAmount="previousBalanceTotal"
-      :loading="isLoading"
-      :color="cashColor"
-    />
-  </section>
-
-  <section class="mb-10">
-    <div class="order-1 lg:order-2 lg:col-span-1">
-      <CategoryBreakdown
-        :transactions="transactions"
-        :period="selectedView"
-        :periodLabel="periodLabel"
-        v-model:chartType="activeChartType"
-        v-model:activeCategory="activeCategory"
-        :key="activeChartType"
-      />
-    </div>
-  </section>
-
-  <section
-    class="flex flex-col sm:flex-row ml-1 sm:ml-0 justify-between mb-6 sm:mb-10 gap-2 mt-5"
-  >
-    <div>
-      <h2 class="text-xl sm:text-2xl font-extrabold">Transaksi</h2>
-      <div class="text-sm sm:text-base text-gray-500 dark:text-gray-400">
-        Terdapat {{ income.length }} pemasukan dan
-        {{ expense.length }} pengeluaran pada periode ini.
-      </div>
-    </div>
-
-    <div
-      class="w-full sm:w-auto mt-4 sm:mt-0 flex items-center justify-center sm:justify-end gap-2"
+  <div class="dashboard-page-root">
+    <section
+      class="flex flex-col items-center sm:flex-row sm:items-center justify-between mb-8 sm:mb-10 gap-4"
     >
-      <UDropdownMenu :items="exportMenuItems">
-        <UButton
-          icon="i-heroicons-arrow-down-tray"
-          color="neutral"
-          variant="outline"
-          class="cursor-pointer sm:w-auto justify-center"
-          label="Unduh Laporan"
-        />
-      </UDropdownMenu>
-      <!-- 🔒 KHUSUS ADMIN (Sembunyi di Mode Member) -->
-      <template v-if="!isMemberMode">
-        <TransactionModal
-          v-model:modelValue="isModalOpen"
-          @update:modelValue="refreshAll"
-          @saved="refreshAll"
-          :transaction="selectedTransaction"
-          :currentBalance="balanceTotal"
-        />
-        <UButton
-          icon="i-heroicons-plus-circle"
-          color="neutral"
-          variant="outline"
-          class="cursor-pointer sm:w-auto justify-center"
-          label="Tambah Transaksi"
-          @click="onAddClick"
-        />
-      </template>
-    </div>
-  </section>
+      <h1 class="text-3xl sm:text-4xl font-extrabold">Ringkasan</h1>
 
-  <section
-    v-if="!isMemberMode"
-    class="flex justify-center sm:justify-end mb-6 ml-1 sm:ml-0 gap-2"
-  >
-    <div class="w-full max-w-42 sm:w-64">
-      <UFormField label="Saring Kategori">
-        <USelectMenu
-          v-model="selectedCategory"
-          :items="categoryFilterItems"
-          value-attribute="value"
-          option-attribute="label"
-          placeholder="Semua Kategori..."
-          class="w-full capitalize cursor-pointer"
-          :ui="{
-            trigger: 'capitalize',
-            content:
-              'w-[var(--radix-select-trigger-width)] min-w-[200px] capitalize',
-          }"
-        >
-          <template #item="{ item }">
-            <div class="flex items-center gap-2">
-              <UIcon
-                :name="item.icon"
-                class="w-4 h-4 shrink-0 text-gray-500 dark:text-gray-400"
-              />
-              <span>{{ item.label }}</span>
-            </div>
-          </template>
-        </USelectMenu>
-      </UFormField>
-    </div>
-    <div class="w-full max-w-42 sm:w-64">
-      <UFormField label="Urutkan Berdasarkan">
-        <USelect
-          v-model="sortBy"
-          :items="[
-            { label: 'Tanggal Terbaru', value: 'date_desc' },
-            { label: 'Tanggal Terlama', value: 'date_asc' },
-            { label: 'Nominal Tertinggi', value: 'amount_desc' },
-            { label: 'Nominal Terendah', value: 'amount_asc' },
-          ]"
-          option-attribute="label"
-          value-attribute="value"
-          class="w-full cursor-pointer"
-        />
-      </UFormField>
-    </div>
-  </section>
-
-  <section
-    v-if="!isMemberMode"
-    :key="selectedView"
-    :class="{ 'opacity-50': isLoading, 'transition-opacity': true }"
-    class="min-h-150"
-  >
-    <div class="order-2 lg:order-1 lg:col-span-2">
-      <div
-        v-for="(transactionOnDay, date) in filteredGroupByDate"
-        :key="date"
-        class="mb-10"
-      >
-        <TransactionDailySummary :date="date" :transaction="transactionOnDay" />
-
-        <TransitionGroup name="list-item" tag="div">
-          <Transaction
-            v-for="transaction in transactionOnDay"
-            :key="transaction.id"
-            :transaction="transaction"
-            :totalAmount="activeTotalAmount"
-            :read-only="isMemberMode"
-            @edit="onEditClick(transaction)"
-            @delete="refreshAll()"
+      <div class="flex items-center justify-between sm:justify-start">
+        <div class="flex items-center space-x-2">
+          <UButton
+            icon="i-heroicons-chevron-left"
+            variant="ghost"
+            @click="prevPeriod"
           />
-        </TransitionGroup>
+          <span
+            class="font-bold text-base sm:text-lg min-w-25 sm:min-w-32 text-center"
+            >{{ periodLabel }}</span
+        >
+          <UButton
+            icon="i-heroicons-chevron-right"
+            variant="ghost"
+            @click="nextPeriod"
+          />
+        </div>
+      </div>
+
+      <div class="mt-2 sm:mt-0">
+        <USelect v-model="selectedView" :items="transactionViewsItems" />
+      </div>
+    </section>
+
+    <section
+      class="grid text-sm grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 sm:gap-16 mb-10 gap-8 ml-1 sm:ml-0"
+    >
+      <Trend
+        title="Pemasukan"
+        :amount="incomeTotal"
+        :lastAmount="previousIncomeTotal"
+        :loading="isLoading"
+        :color="incomeStatusColor"
+      />
+      <Trend
+        title="Pengeluaran"
+        :amount="expenseTotal"
+        :lastAmount="previousExpenseTotal"
+        :loading="isLoading"
+        :color="expenseStatusColor"
+      />
+      <Trend
+        title="Tabungan"
+        :amount="savingsTotal"
+        :lastAmount="previousSavingsTotal"
+        :loading="isLoading"
+        :color="savingsStatusColor"
+      />
+      <Trend
+        title="Total Saldo"
+        :amount="balanceTotal"
+        :lastAmount="previousBalanceTotal"
+        :loading="isLoading"
+        :color="cashColor"
+      />
+    </section>
+
+    <section class="mb-10">
+      <div class="order-1 lg:order-2 lg:col-span-1">
+        <CategoryBreakdown
+          :transactions="transactions"
+          :period="selectedView"
+          :periodLabel="periodLabel"
+          v-model:chartType="activeChartType"
+          v-model:activeCategory="activeCategory"
+          :key="activeChartType"
+        />
+      </div>
+    </section>
+
+    <section
+      class="flex flex-col sm:flex-row ml-1 sm:ml-0 justify-between mb-6 sm:mb-10 gap-2 mt-5"
+    >
+      <div>
+        <h2 class="text-xl sm:text-2xl font-extrabold">Transaksi</h2>
+        <div class="text-sm sm:text-base text-gray-500 dark:text-gray-400">
+          Terdapat {{ income.length }} pemasukan dan
+          {{ expense.length }} pengeluaran pada periode ini.
+        </div>
       </div>
 
       <div
-        v-if="transactions.length === 0 && !isLoading"
-        class="text-center py-10 text-gray-500"
+        class="w-full sm:w-auto mt-4 sm:mt-0 flex items-center justify-center sm:justify-end gap-2"
       >
-        Tidak ada transaksi pada periode ini.
+        <UDropdownMenu :items="exportMenuItems">
+          <UButton
+            icon="i-heroicons-arrow-down-tray"
+            color="neutral"
+            variant="outline"
+            class="cursor-pointer sm:w-auto justify-center"
+            label="Unduh Laporan"
+          />
+        </UDropdownMenu>
+        <!-- 🔒 KHUSUS ADMIN (Sembunyi di Mode Member) -->
+        <template v-if="!isMemberMode">
+          <TransactionModal
+            v-model:modelValue="isModalOpen"
+            @update:modelValue="refreshAll"
+            @saved="refreshAll"
+            :transaction="selectedTransaction"
+            :currentBalance="balanceTotal"
+          />
+          <UButton
+            icon="i-heroicons-plus-circle"
+            color="neutral"
+            variant="outline"
+            class="cursor-pointer sm:w-auto justify-center"
+            label="Tambah Transaksi"
+            @click="onAddClick"
+          />
+        </template>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <section v-if="!isMemberMode && isLoading && transactions.length === 0">
-    <USkeleton v-for="i in 3" :key="i" class="h-8 w-full rounded-md mb-2" />
-  </section>
+    <section
+      v-if="!isMemberMode"
+      class="flex justify-center sm:justify-end mb-6 ml-1 sm:ml-0 gap-2"
+    >
+      <div class="w-full max-w-42 sm:w-64">
+        <UFormField label="Saring Kategori">
+          <USelectMenu
+            v-model="selectedCategory"
+            :items="categoryFilterItems"
+            value-attribute="value"
+            option-attribute="label"
+            placeholder="Semua Kategori..."
+            class="w-full capitalize cursor-pointer"
+            :ui="{
+              trigger: 'capitalize',
+              content:
+                'w-[var(--radix-select-trigger-width)] min-w-[200px] capitalize',
+            }"
+          >
+            <template #item="{ item }">
+              <div class="flex items-center gap-2">
+                <UIcon
+                  :name="item.icon"
+                  class="w-4 h-4 shrink-0 text-gray-500 dark:text-gray-400"
+                />
+                <span>{{ item.label }}</span>
+              </div>
+            </template>
+          </USelectMenu>
+        </UFormField>
+      </div>
+      <div class="w-full max-w-42 sm:w-64">
+        <UFormField label="Urutkan Berdasarkan">
+          <USelect
+            v-model="sortBy"
+            :items="[
+              { label: 'Tanggal Terbaru', value: 'date_desc' },
+              { label: 'Tanggal Terlama', value: 'date_asc' },
+              { label: 'Nominal Tertinggi', value: 'amount_desc' },
+              { label: 'Nominal Terendah', value: 'amount_asc' },
+            ]"
+            option-attribute="label"
+            value-attribute="value"
+            class="w-full cursor-pointer"
+          />
+        </UFormField>
+      </div>
+    </section>
+
+    <section
+      v-if="!isMemberMode"
+      :key="selectedView"
+      :class="{ 'opacity-50': isLoading, 'transition-opacity': true }"
+      class="min-h-150"
+    >
+      <div class="order-2 lg:order-1 lg:col-span-2">
+        <div
+          v-for="(transactionOnDay, date) in filteredGroupByDate"
+          :key="date"
+          class="mb-10"
+        >
+          <TransactionDailySummary :date="date" :transaction="transactionOnDay" />
+
+          <TransitionGroup name="list-item" tag="div">
+            <Transaction
+              v-for="transaction in transactionOnDay"
+              :key="transaction.id"
+              :transaction="transaction"
+              :totalAmount="activeTotalAmount"
+              :read-only="isMemberMode"
+              @edit="onEditClick(transaction)"
+              @delete="refreshAll()"
+            />
+          </TransitionGroup>
+        </div>
+
+        <div
+          v-if="transactions.length === 0 && !isLoading"
+          class="text-center py-10 text-gray-500"
+        >
+          Tidak ada transaksi pada periode ini.
+        </div>
+      </div>
+    </section>
+
+    <section v-if="!isMemberMode && isLoading && transactions.length === 0">
+      <USkeleton v-for="i in 3" :key="i" class="h-8 w-full rounded-md mb-2" />
+    </section>
+  </div>
 </template>

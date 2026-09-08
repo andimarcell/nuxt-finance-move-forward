@@ -1,4 +1,4 @@
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 
 /**
  * Composable to reveal elements when they enter the viewport.
@@ -14,9 +14,18 @@ export function useScrollReveal(options = { threshold: 0.15, rootMargin: '0px 0p
   const isVisible = ref(false)
   let observer = null
 
-  onMounted(() => {
+  onMounted(async () => {
     // Safety check for SSR (Nuxt 4 / Nuxt UI 4)
     if (!import.meta.client) return
+
+    // Wait for DOM to be fully rendered to ensure target.value is populated
+    await nextTick()
+
+    // Safety exit if target element is not found in DOM
+    if (!target.value) {
+      console.warn('[useScrollReveal] Target element not found on mount')
+      return
+    }
 
     // Fallback if IntersectionObserver is not supported in the browser
     if (!('IntersectionObserver' in window)) {
@@ -36,18 +45,19 @@ export function useScrollReveal(options = { threshold: 0.15, rootMargin: '0px 0p
       })
     }, options)
 
-    // Start observing the target element once it's available
-    if (target.value) {
+    // Start observing the target element
+    try {
       observer.observe(target.value)
-    } else {
-      // In case ref isn't immediately available (though onMounted usually covers it)
-      // we can watch target if needed, but for standard template refs, this is sufficient.
+    } catch (e) {
+      console.error('[useScrollReveal] Failed to observe target:', e)
+      isVisible.value = true // Fallback to visible so content isn't hidden forever
     }
   })
 
   onBeforeUnmount(() => {
     if (observer) {
       observer.disconnect()
+      observer = null
     }
   })
 
