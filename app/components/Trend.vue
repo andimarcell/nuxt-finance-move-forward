@@ -8,6 +8,7 @@ const props = defineProps({
 });
 
 const { amount } = toRefs(props);
+const { animatedValue } = useAnimatedCounter(amount);
 
 const trendingUp = computed(() => props.amount >= props.lastAmount);
 const icon = computed(() =>
@@ -87,7 +88,7 @@ const trendColor = computed(() => {
     : "text-red-600 dark:text-red-400";
 });
 
-const { currency } = useCurrency(amount);
+const { currency } = useCurrency(animatedValue);
 </script>
 
 <template>
