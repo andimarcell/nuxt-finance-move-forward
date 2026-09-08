@@ -18,12 +18,18 @@ export function useScrollReveal(options = { threshold: 0.15, rootMargin: '0px 0p
     // Safety check for SSR (Nuxt 4 / Nuxt UI 4)
     if (!import.meta.client) return
 
+    // Respect user's motion preference (accessibility)
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      isVisible.value = true
+      return
+    }
+
     // Wait for DOM to be fully rendered to ensure target.value is populated
     await nextTick()
 
     // Safety exit if target element is not found in DOM
     if (!target.value) {
-      console.warn('[useScrollReveal] Target element not found on mount')
+      isVisible.value = true // fail-safe: jangan sembunyikan konten selamanya
       return
     }
 
