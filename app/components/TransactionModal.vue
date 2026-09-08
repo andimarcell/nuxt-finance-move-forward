@@ -376,18 +376,20 @@ async function onSubmit(event) {
           </USelectMenu>
         </UFormField>
 
-        <UFormField
-          v-if="getCategoryValue(state.category) === 'lainnya'"
-          label="Nama Kategori Baru"
-          required
-        >
-          <UInput
-            v-model="customCategory"
-            placeholder="Ketik nama kategori kustom baru Anda..."
-            icon="i-heroicons-pencil-square"
-            class="w-full"
-          />
-        </UFormField>
+        <Transition name="field-slide">
+          <UFormField
+            v-if="getCategoryValue(state.category) === 'lainnya'"
+            label="Nama Kategori Baru"
+            required
+          >
+            <UInput
+              v-model="customCategory"
+              placeholder="Ketik nama kategori kustom baru Anda..."
+              icon="i-heroicons-pencil-square"
+              class="w-full"
+            />
+          </UFormField>
+        </Transition>
 
         <!-- PILIHAN IKON KUSTOM -->
         <UFormField
@@ -420,7 +422,8 @@ async function onSubmit(event) {
             </button>
           </div>
         </UFormField>
-        <div v-if="isCategoryFilled" class="space-y-4">
+        <Transition name="field-slide">
+          <div v-if="isCategoryFilled" class="space-y-4">
           <UFormField label="Keterangan" name="description" v-slot="{ error }">
             <textarea
               ref="textareaRef"
@@ -444,19 +447,21 @@ async function onSubmit(event) {
               class="w-full"
             />
 
-            <div
-              v-if="isOverBudget"
-              class="flex items-start gap-1 mt-2 text-red-500 dark:text-red-400 text-sm font-medium"
-            >
-              <UIcon
-                name="i-heroicons-exclamation-triangle"
-                class="w-5 h-5 shrink-0"
-              />
-              <p>
-                Saldo tidak mencukupi! Sisa saldo yang bisa Anda gunakan hanya
-                <strong>{{ formattedAvailableBalance }}</strong>
-              </p>
-            </div>
+            <Transition name="field-fade">
+              <div
+                v-if="isOverBudget"
+                class="flex items-start gap-1 mt-2 text-red-500 dark:text-red-400 text-sm font-medium"
+              >
+                <UIcon
+                  name="i-heroicons-exclamation-triangle"
+                  class="w-5 h-5 shrink-0"
+                />
+                <p>
+                  Saldo tidak mencukupi! Sisa saldo yang bisa Anda gunakan hanya
+                  <strong>{{ formattedAvailableBalance }}</strong>
+                </p>
+              </div>
+            </Transition>
           </UFormField>
 
           <UFormField label="Jenis Transaksi" name="type">
@@ -495,6 +500,7 @@ async function onSubmit(event) {
             </UButton>
           </div>
         </div>
+        </Transition>
       </UForm>
     </template>
   </UModal>

@@ -85,6 +85,57 @@
     width: 100%;
   }
 
+  .field-slide-enter-active,
+  .field-slide-leave-active {
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  .field-slide-enter-from,
+  .field-slide-leave-to {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+
+  .field-fade-enter-active,
+  .field-fade-leave-active {
+    transition: opacity 0.15s ease;
+  }
+  .field-fade-enter-from,
+  .field-fade-leave-to {
+    opacity: 0;
+  }
+
+  .list-item-enter-active,
+  .list-item-leave-active {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+  .list-item-enter-from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  .list-item-leave-to {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  .list-item-leave-active {
+    position: absolute;
+  }
+  .list-item-move {
+    transition: transform 0.3s ease;
+  }
+
+  .legend-item-enter-active,
+  .legend-item-leave-active {
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  .legend-item-enter-from,
+  .legend-item-leave-to {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  .legend-item-move {
+    transition: transform 0.25s ease;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .animate-fade-in-up,
     .animate-fade-in,
@@ -96,7 +147,17 @@
     .animate-delay-500,
     .animate-delay-600,
     .page-fade-enter-active,
-    .page-fade-leave-active {
+    .page-fade-leave-active,
+    .field-slide-enter-active,
+    .field-slide-leave-active,
+    .field-fade-enter-active,
+    .field-fade-leave-active,
+    .list-item-enter-active,
+    .list-item-leave-active,
+    .list-item-move,
+    .legend-item-enter-active,
+    .legend-item-leave-active,
+    .legend-item-move {
       animation: none !important;
       transition: none !important;
     }

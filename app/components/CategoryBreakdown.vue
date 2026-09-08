@@ -170,6 +170,12 @@ const chartOptions = computed(() => {
       sparkline: {
         enabled: true,
       },
+      animations: {
+        enabled: true,
+        speed: 400,
+        animateGradually: { enabled: true, delay: 100 },
+        dynamicAnimation: { enabled: true, speed: 350 }
+      },
       events: {
         dataPointSelection: (event, chartContext, config) => {
           if (
@@ -363,7 +369,9 @@ const series = computed(() => categorySummary.value.series);
       </div>
 
       <!-- Kontainer List: Berjejer vertikal rapi di tengah -->
-      <div
+      <TransitionGroup
+        name="legend-item"
+        tag="div"
         class="grid grid-cols-2 gap-x-4 gap-y-5 justify-items-center max-w-sm mx-auto"
       >
         <div
@@ -394,7 +402,7 @@ const series = computed(() => categorySummary.value.series);
             </span>
           </div>
         </div>
-      </div>
+      </TransitionGroup>
     </div>
   </div>
 </template>

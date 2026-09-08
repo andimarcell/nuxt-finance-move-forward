@@ -528,15 +528,17 @@ const exportMenuItems = computed(() => [
       >
         <TransactionDailySummary :date="date" :transaction="transactionOnDay" />
 
-        <Transaction
-          v-for="(transaction, index) in transactionOnDay"
-          :key="index"
-          :transaction="transaction"
-          :totalAmount="activeTotalAmount"
-          :read-only="isMemberMode"
-          @edit="onEditClick(transaction)"
-          @delete="refreshAll()"
-        />
+        <TransitionGroup name="list-item" tag="div">
+          <Transaction
+            v-for="transaction in transactionOnDay"
+            :key="transaction.id"
+            :transaction="transaction"
+            :totalAmount="activeTotalAmount"
+            :read-only="isMemberMode"
+            @edit="onEditClick(transaction)"
+            @delete="refreshAll()"
+          />
+        </TransitionGroup>
       </div>
 
       <div
