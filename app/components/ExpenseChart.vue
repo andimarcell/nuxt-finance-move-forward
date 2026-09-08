@@ -153,7 +153,7 @@ const series = computed(() => aggregatedData.value.series);
       <div class="flex gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
         <button
           type="button"
-          class="px-3 py-1 text-xs font-bold rounded-md transaition duration-150 cursor-pointer"
+          class="px-3 py-1 text-xs font-bold rounded-md transition duration-150 cursor-pointer"
           :class="
             chartType === 'expense'
               ? 'bg-primary-500 text-white shadow-sm'
@@ -165,7 +165,7 @@ const series = computed(() => aggregatedData.value.series);
         </button>
         <button
           type="button"
-          class="px-3 py-1 text-xs font-bold rounded-md transaition duration-150 cursor-pointer"
+          class="px-3 py-1 text-xs font-bold rounded-md transition duration-150 cursor-pointer"
           :class="
             chartType === 'income'
               ? 'bg-primary-500 text-white shadow-sm'
