@@ -1,5 +1,7 @@
 <script setup>
 const user = useSupabaseUser();
+const { target: laptopMockupRef, isVisible: laptopMockupVisible } = useScrollReveal()
+const { target: mobileMockupRef, isVisible: mobileMockupVisible } = useScrollReveal()
 
 definePageMeta({
   layout: "default",
@@ -122,7 +124,11 @@ const ctaLabel = computed(() => {
 
     <!-- MOCKUP DASHBOARD LAPTOP -->
     <div
-      class="hidden md:block w-full max-w-5xl rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden transform transition hover:scale-[1.01] duration-300 animate-scale-in animate-delay-500"
+      ref="laptopMockupRef"
+      :class="[
+        'hidden md:block w-full max-w-5xl rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 overflow-hidden transform transition hover:scale-[1.01] duration-300',
+        laptopMockupVisible ? 'animate-scale-in' : 'opacity-0'
+      ]"
     >
       <div
         class="bg-gray-100 dark:bg-gray-900 p-3 border-b border-gray-200 dark:border-gray-800 flex space-x-2"
@@ -142,7 +148,11 @@ const ctaLabel = computed(() => {
 
     <!-- MOCKUP DASHBOARD HP -->
     <div
-      class="block md:hidden mt-6 w-72 rounded-[40px] border-8 border-gray-800 dark:border-gray-950 shadow-2xl overflow-hidden relative aspect-9/19 bg-white dark:bg-gray-900 transform transition hover:scale-[1.02] duration-300 animate-scale-in animate-delay-500"
+      ref="mobileMockupRef"
+      :class="[
+        'block md:hidden mt-6 w-72 rounded-[40px] border-8 border-gray-800 dark:border-gray-950 shadow-2xl overflow-hidden relative aspect-9/19 bg-white dark:bg-gray-900 transform transition hover:scale-[1.02] duration-300',
+        mobileMockupVisible ? 'animate-scale-in' : 'opacity-0'
+      ]"
     >
       <div
         class="absolute top-2 left-1/2 transform -translate-x-1/2 w-28 h-5 bg-gray-800 dark:bg-gray-950 rounded-full z-20 flex items-center justify-center"
