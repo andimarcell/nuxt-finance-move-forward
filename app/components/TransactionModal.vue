@@ -336,6 +336,14 @@ async function onSubmit(event) {
 </script>
 
 <template>
+  <Transition
+      enter-active-class="transition-all duration-300 ease-out"
+      enter-from-class="opacity-0 scale-95"
+      enter-to-class="opacity-100 scale-100"
+      leave-active-class="transition-all duration-200 ease-in"
+      leave-from-class="opacity-100 scale-100"
+      leave-to-class="opacity-0 scale-95"
+    >
   <UModal
     scrollable
     v-model:open="isModalOpen"
@@ -490,12 +498,12 @@ async function onSubmit(event) {
               :label="isOverBudget ? 'Saldo Tidak Cukup' : 'Simpan Transaksi'"
               :disabled="isOverBudget"
               :color="isOverBudget ? 'red' : 'primary'"
-              class="cursor-pointer"
+              class="cursor-pointer active:scale-95"
             />
             <UButton
               variant="outline"
               @click="clearForm"
-              class="cursor-pointer"
+              class="cursor-pointer active:scale-95"
             >
               Bersihkan
             </UButton>
@@ -505,4 +513,5 @@ async function onSubmit(event) {
       </UForm>
     </template>
   </UModal>
+</Transition>
 </template>

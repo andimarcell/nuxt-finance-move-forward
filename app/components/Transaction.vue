@@ -1,6 +1,4 @@
 <script setup>
-import { computed, ref } from "vue";
-
 const props = defineProps({
   transaction: Object,
   totalAmount: {
@@ -18,7 +16,7 @@ const emit = defineEmits(["delete", "edit"]);
 // Fungsi penghitung persentase bar secara presisi
 const percentOfTotal = computed(() => {
   if (!props.totalAmount || props.totalAmount === 0) return 0;
-  const ratio = (props.transaction.amount / props.totalAmount) * 100;
+  const ratio = (props.transaction?.amount || 0) / props.totalAmount * 100;
   return Math.round(ratio);
 });
 
@@ -112,7 +110,8 @@ const categoryLabel = computed(() => {
 
 <template>
   <div
-    class="border-b border-gray-100 dark:border-gray-800 py-3.5 mt-1 flex sm:grid sm:grid-cols-2 items-center justify-between sm:justify-stretch gap-4"
+    v-if="props.transaction"
+    class="border-b border-gray-100 dark:border-gray-800 py-3.5 mt-1 flex sm:grid sm:grid-cols-2 items-center justify-between sm:justify-stretch gap-4 active:scale-95"
   >
     <!-- ======================================================== -->
     <!-- SISI KIRI (Kolom 1 di Desktop [50%], Flex-Row di Mobile) -->
