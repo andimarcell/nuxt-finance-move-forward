@@ -266,6 +266,7 @@ async function onSubmit(event) {
 
   isLoading.value = true;
   try {
+    if (navigator?.vibrate) navigator.vibrate(10);
     let error;
 
     const payload = { ...state };
