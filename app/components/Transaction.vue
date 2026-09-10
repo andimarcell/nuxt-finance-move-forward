@@ -111,7 +111,7 @@ const categoryLabel = computed(() => {
 <template>
   <div
     v-if="props.transaction"
-    class="border-b border-gray-100 dark:border-gray-800 py-3.5 mt-1 flex sm:grid sm:grid-cols-2 items-center justify-between sm:justify-stretch gap-4 active:scale-95"
+    class="border-b border-gray-100 dark:border-gray-800 py-3.5 mt-1 flex sm:grid sm:grid-cols-2 items-center justify-between sm:justify-stretch gap-4"
   >
     <!-- ======================================================== -->
     <!-- SISI KIRI (Kolom 1 di Desktop [50%], Flex-Row di Mobile) -->
@@ -187,35 +187,37 @@ const categoryLabel = computed(() => {
     <!-- ======================================================== -->
     <!-- SISI KANAN (Kolom 2 di Desktop [50%], Flex-Row di Mobile) -->
     <!-- ======================================================== -->
-    <div class="flex items-center justify-end space-x-2 shrink-0 sm:w-full">
-      <div class="flex items-start text-right">
-        <span
-          class="text-sm sm:text-base font-extrabold text-gray-900 dark:text-white"
-        >
-          {{ amount.main }}
-        </span>
-        <sup
-          class="text-[0.65rem] sm:text-[0.75rem] font-bold ml-0.5 mt-0.5 sm:mt-1 opacity-70 text-gray-500 dark:text-gray-400"
-        >
-          {{ amount.fraction }}
-        </sup>
-      </div>
+    <div class="flex items-center justify-end shrink-0 sm:w-full">
+      <div class="flex items-center gap-2">
+        <div class="flex items-start text-right">
+          <span
+            class="text-sm sm:text-base font-extrabold text-gray-900 dark:text-white"
+          >
+            {{ amount.main }}
+          </span>
+          <sup
+            class="text-[0.65rem] sm:text-[0.75rem] font-bold ml-0.5 mt-0.5 sm:mt-1 opacity-70 text-gray-500 dark:text-gray-400"
+          >
+            {{ amount.fraction }}
+          </sup>
+        </div>
 
-      <!-- 🔒 SENSOR: Sembunyikan Tombol Titik Tiga (Edit/Hapus) jika dalam Member Mode -->
-      <div v-if="!readOnly">
-        <UDropdownMenu
-          :items="actions"
-          :content="{ side: 'bottom', align: 'end' }"
-        >
-          <UButton
-            color="neutral"
-            variant="ghost"
-            size="sm"
-            class="cursor-pointer duration-75"
-            trailing-icon="i-heroicons-ellipsis-horizontal"
-            :loading="isLoading"
-          />
-        </UDropdownMenu>
+        <!-- 🔒 SENSOR: Sembunyikan Tombol Titik Tiga (Edit/Hapus) jika dalam Member Mode -->
+        <div v-if="!readOnly" class="z-50">
+          <UDropdownMenu
+            :items="actions"
+            :content="{ side: 'bottom', align: 'end' }"
+          >
+            <UButton
+              color="neutral"
+              variant="ghost"
+              size="sm"
+              class="cursor-pointer transition-transform duration-150 active:scale-90 hover:scale-105"
+              trailing-icon="i-heroicons-ellipsis-horizontal"
+              :loading="isLoading"
+            />
+          </UDropdownMenu>
+        </div>
       </div>
     </div>
   </div>
