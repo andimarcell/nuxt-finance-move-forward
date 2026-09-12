@@ -340,15 +340,6 @@ const handleForgotPassword = async () => {
                   <label class="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                     Password
                   </label>
-                  <button
-                    v-if="authMode === 'login'"
-                    type="button"
-                    @click="handleForgotPassword"
-                    class="text-xs font-semibold text-primary hover:underline cursor-pointer transition-colors"
-                    :disabled="isResetting"
-                  >
-                    {{ isResetting ? 'Mengirim...' : 'Lupa Password?' }}
-                  </button>
                 </div>
                 <UInput
                   v-model="password"
@@ -393,6 +384,15 @@ const handleForgotPassword = async () => {
                 }}
               </span>
             </UButton>
+            <button
+                    v-if="authMode === 'login'"
+                    type="button"
+                    @click="handleForgotPassword"
+                    class="text-xs font-semibold text-primary hover:underline cursor-pointer transition-colors"
+                    :disabled="isResetting"
+                  >
+                    {{ isResetting ? 'Mengirim...' : 'Lupa Password?' }}
+                  </button>
           </form>
 
           <!-- Divider & Mode Switches -->
