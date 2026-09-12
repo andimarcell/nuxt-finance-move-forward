@@ -111,7 +111,7 @@ const categoryLabel = computed(() => {
 <template>
   <div
     v-if="props.transaction"
-    class="border-b border-gray-100 dark:border-gray-800 py-3.5 mt-1 flex sm:grid sm:grid-cols-2 items-center justify-between sm:justify-stretch gap-4"
+    class="border-b border-gray-100 dark:border-gray-800/80 py-3.5 px-3 sm:px-4 rounded-xl flex sm:grid sm:grid-cols-2 items-center justify-between sm:justify-stretch gap-4 hover:bg-gray-50/80 dark:hover:bg-gray-800/40 transition-colors duration-150 group"
   >
     <!-- ======================================================== -->
     <!-- SISI KIRI (Kolom 1 di Desktop [50%], Flex-Row di Mobile) -->
@@ -119,11 +119,16 @@ const categoryLabel = computed(() => {
     <div
       class="flex items-start sm:items-center justify-between min-w-0 flex-1 sm:flex-none"
     >
-      <div class="flex items-start sm:items-center space-x-3 min-w-0 flex-1">
-        <UIcon
-          :name="icon"
-          :class="[iconColor, 'shrink-0 mt-0.5 sm:mt-0 w-5 h-5']"
-        />
+      <div class="flex items-start sm:items-center space-x-3.5 min-w-0 flex-1">
+        <div
+          class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5 sm:mt-0 transition-transform group-hover:scale-105"
+          :class="isIncome ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400' : 'bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400'"
+        >
+          <UIcon
+            :name="icon"
+            class="w-5 h-5"
+          />
+        </div>
 
         <div class="flex flex-col min-w-0">
           <UTooltip
@@ -131,7 +136,7 @@ const categoryLabel = computed(() => {
             :content="{ side: 'top', align: 'center' }"
           >
             <div
-              class="text-sm sm:text-base font-semibold text-gray-900 dark:text-white wrap-break-word sm:truncate sm:max-w-64 md:max-w-md cursor-help"
+              class="text-sm sm:text-base font-semibold text-gray-900 dark:text-white wrap-break-word sm:truncate sm:max-w-64 md:max-w-md cursor-help group-hover:text-primary transition-colors"
             >
               {{ transaction.description }}
             </div>
@@ -141,45 +146,45 @@ const categoryLabel = computed(() => {
             class="w-full bg-gray-100 dark:bg-gray-800 h-1.5 rounded-full overflow-hidden mt-2 max-w-50 sm:max-w-xs"
           >
             <div
-              class="h-full rounded-full transition-all duration-300"
-              :class="isIncome ? 'bg-green-500' : 'bg-red-500'"
+              class="h-full rounded-full transition-all duration-500"
+              :class="isIncome ? 'bg-emerald-500' : 'bg-rose-500'"
               :style="{ width: `${percentOfTotal}%` }"
             ></div>
           </div>
 
-          <div class="mt-1 block sm:hidden">
+          <div class="mt-1.5 flex items-center gap-1.5 sm:hidden">
             <UBadge
               color="neutral"
-              variant="outline"
+              variant="subtle"
               class="text-[9px] px-1.5 py-0.5 font-medium rounded-md capitalize"
             >
               {{ categoryLabel }}
             </UBadge>
             <UBadge
-              color="neutral"
-              variant="outline"
+              :color="isIncome ? 'success' : 'error'"
+              variant="subtle"
               class="text-[9px] px-1.5 py-0.5 font-medium rounded-md"
             >
-              {{ transaction.type === "income" ? "Pemasukan" : "Pengeluaran" }}
+              {{ isIncome ? "Pemasukan" : "Pengeluaran" }}
             </UBadge>
           </div>
         </div>
       </div>
 
-      <div class="hidden sm:block shrink-0 ml-4">
+      <div class="hidden sm:flex items-center gap-2 shrink-0 ml-4">
         <UBadge
           color="neutral"
-          variant="outline"
-          class="text-[10px] sm:text-xs px-2 py-0.5 font-medium rounded-md capitalize"
+          variant="subtle"
+          class="text-[10px] sm:text-xs px-2.5 py-1 font-medium rounded-md capitalize"
         >
           {{ categoryLabel }}
         </UBadge>
         <UBadge
-          color="neutral"
-          variant="outline"
-          class="text-[10px] sm:text-xs px-2 py-0.5 font-medium rounded-md"
+          :color="isIncome ? 'success' : 'error'"
+          variant="subtle"
+          class="text-[10px] sm:text-xs px-2.5 py-1 font-medium rounded-md"
         >
-          {{ transaction.type === "income" ? "Pemasukan" : "Pengeluaran" }}
+          {{ isIncome ? "Pemasukan" : "Pengeluaran" }}
         </UBadge>
       </div>
     </div>
@@ -188,15 +193,16 @@ const categoryLabel = computed(() => {
     <!-- SISI KANAN (Kolom 2 di Desktop [50%], Flex-Row di Mobile) -->
     <!-- ======================================================== -->
     <div class="flex items-center justify-end shrink-0 sm:w-full">
-      <div class="flex items-center gap-2">
-        <div class="flex items-start text-right">
+      <div class="flex items-center gap-2.5">
+        <div class="flex items-start text-right" style="font-family: 'JetBrains Mono', monospace">
           <span
-            class="text-sm sm:text-base font-extrabold text-gray-900 dark:text-white"
+            class="text-sm sm:text-base font-bold tracking-tight"
+            :class="isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'"
           >
-            {{ amount.main }}
+            {{ isIncome ? '+' : '-' }}{{ amount.main }}
           </span>
           <sup
-            class="text-[0.65rem] sm:text-[0.75rem] font-bold ml-0.5 mt-0.5 sm:mt-1 opacity-70 text-gray-500 dark:text-gray-400"
+            class="text-[0.65rem] sm:text-[0.75rem] font-semibold ml-0.5 mt-0.5 sm:mt-1 opacity-70 text-gray-400 dark:text-gray-500"
           >
             {{ amount.fraction }}
           </sup>

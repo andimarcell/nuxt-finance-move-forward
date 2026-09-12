@@ -11,14 +11,78 @@ import {
 import { id } from "date-fns/locale";
 import { transactionViewsItems } from "~/utils/constants";
 
+definePageMeta({
+  layout: false, // Membangun full-screen dashboard workspace dengan Sidebar dan Top Bar ala Figma
+});
+
+useHead({
+  title: "Dashboard - FTracker Modern Finance",
+  link: [
+    {
+      rel: "preconnect",
+      href: "https://fonts.googleapis.com",
+    },
+    {
+      rel: "preconnect",
+      href: "https://fonts.gstatic.com",
+      crossorigin: "",
+    },
+    {
+      rel: "stylesheet",
+      href: "https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Inter:wght@400;500;600;700&display=swap",
+    },
+  ],
+});
+
 const config = useRuntimeConfig();
 const isMemberMode = config.public.memberMode;
+const user = useSupabaseUser();
+const supabase = useSupabaseClient();
+const colorMode = useColorMode();
 
-const selectedView = ref(transactionViewsItems[1]);
+const selectedView = ref(transactionViewsItems[1]); // Bulanan
 const referenceDate = ref(new Date());
 const isModalOpen = ref(false);
 const selectedTransaction = ref(null);
+const isMobileSidebarOpen = ref(false);
+const activeNavTab = ref("overview"); // 'overview' | 'transactions' | 'analytics'
 
+// Greeting Dinamis berdasarkan Waktu
+const greeting = computed(() => {
+  const hour = new Date().getHours();
+  if (hour >= 4 && hour < 11) return "Selamat pagi";
+  if (hour >= 11 && hour < 15) return "Selamat siang";
+  if (hour >= 15 && hour < 18) return "Selamat sore";
+  return "Selamat malam";
+});
+
+const userDisplayName = computed(() => {
+  if (!user.value) return "Pengguna";
+  if (user.value.user_metadata?.full_name) {
+    return user.value.user_metadata.full_name.split(" ")[0];
+  }
+  if (user.value.email) {
+    const username = user.value.email.split("@")[0];
+    return username.charAt(0).toUpperCase() + username.slice(1);
+  }
+  return "Pengguna";
+});
+
+const userAvatarUrl = computed(() => {
+  if (user.value?.user_metadata?.avatar_url) {
+    return user.value.user_metadata.avatar_url;
+  }
+  const email = user.value?.email || "User";
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(email)}&background=10b981&color=fff&bold=true`;
+});
+
+const logout = async () => {
+  await supabase.auth.signOut();
+  clearNuxtData();
+  navigateTo("/login", { replace: true });
+};
+
+// Modal handlers
 const onEditClick = (transaction) => {
   if (isMemberMode) return;
   selectedTransaction.value = transaction;
@@ -31,6 +95,7 @@ const onAddClick = () => {
   isModalOpen.value = true;
 };
 
+// Data transactions fetch
 const { current, previous } = useSelectedTimePeriod(
   selectedView,
   referenceDate,
@@ -60,6 +125,7 @@ const refreshAll = async () => {
   await Promise.all([refreshTransactions(), refreshPreviousTransactions()]);
 };
 
+// Navigasi Periode
 const nextPeriod = () => {
   if (selectedView.value === "tahunan")
     referenceDate.value = addYears(referenceDate.value, 1);
@@ -86,40 +152,12 @@ const periodLabel = computed(() => {
   return format(referenceDate.value, "d MMMM yyyy", { locale: id });
 });
 
-const incomeStatusColor = computed(() => {
-  return incomeTotal.value < previousIncomeTotal.value
-    ? "text-red-600 dark:text-red-400"
-    : "text-green-600 dark:text-green-400";
-});
-
-const expenseStatusColor = computed(() => {
-  const isSpendingMore = expenseTotal.value > previousExpenseTotal.value;
-  const isOverBudget = expenseTotal.value > incomeTotal.value;
-
-  return isSpendingMore || isOverBudget
-    ? "text-red-600 dark:text-red-400"
-    : "text-green-600 dark:text-green-400";
-});
-
-const savingsStatusColor = computed(() => {
-  const isDecreasing = savingsTotal.value < previousSavingsTotal.value;
-  const isNegative = savingsTotal.value < 0;
-
-  return isDecreasing || isNegative
-    ? "text-red-600 dark:text-red-400"
-    : "text-green-600 dark:text-green-400";
-});
-
-const cashColor = computed(() => {
-  return balanceTotal.value < 0
-    ? "text-red-600 dark:text-red-400"
-    : "text-green-600 dark:text-green-400";
-});
-
+// Filters & Sorting
 const activeChartType = ref("all");
 const selectedCategory = ref("all");
 const sortBy = ref("date_desc");
 const activeCategory = ref(null);
+const searchQuery = ref("");
 
 watch(activeChartType, () => {
   activeCategory.value = null;
@@ -131,11 +169,11 @@ const getCategoryValue = (cat) => {
   return cat;
 };
 
-// 🟢 FILTER PRESISI LENGKAP: Memisahkan data array yang lolos semua kriteria filter
+// Filter transaksi lengkap
 const filteredTransactionsList = computed(() => {
   const txs = transactions.value || [];
 
-  // A. Filter Tipe Utama (Semua, Pengeluaran, Pemasukan)
+  // 1. Filter Tipe Utama
   let filtered = txs.filter((transaction) => {
     if (activeChartType.value === "all") {
       if (activeCategory.value) {
@@ -148,7 +186,7 @@ const filteredTransactionsList = computed(() => {
     return transaction.type?.toLowerCase() === activeChartType.value;
   });
 
-  // B. Filter Kategori Dropdown / Klik Grafik
+  // 2. Filter Kategori
   filtered = filtered.filter((t) => {
     if (activeCategory.value && activeChartType.value !== "all") {
       return (
@@ -158,7 +196,6 @@ const filteredTransactionsList = computed(() => {
     }
 
     const filterValue = getCategoryValue(selectedCategory.value);
-    // LOGIKA PRESET: Jika memilih "Khusus Kas Anggota", hanya ambil kategori berhubungan dengan Kas
     if (filterValue === "kas_only") {
       const cat = t.category?.toLowerCase()?.trim() || "";
       return (
@@ -177,7 +214,17 @@ const filteredTransactionsList = computed(() => {
     return true;
   });
 
-  // C. Pengurutan Data
+  // 3. Search Query
+  if (searchQuery.value.trim()) {
+    const q = searchQuery.value.toLowerCase().trim();
+    filtered = filtered.filter((t) => {
+      const desc = (t.description || "").toLowerCase();
+      const cat = (t.category || "").toLowerCase();
+      return desc.includes(q) || cat.includes(q);
+    });
+  }
+
+  // 4. Pengurutan Data
   filtered.sort((a, b) => {
     const dateA = new Date(a.created_at).getTime();
     const dateB = new Date(b.created_at).getTime();
@@ -194,7 +241,7 @@ const filteredTransactionsList = computed(() => {
   return filtered;
 });
 
-// Grouping Data Harian berdasarkan data yang sudah tersaring
+// Grouping Harian
 const filteredGroupByDate = computed(() => {
   let grouped = {};
   for (const transaction of filteredTransactionsList.value) {
@@ -205,7 +252,6 @@ const filteredGroupByDate = computed(() => {
   return grouped;
 });
 
-// 🟢 REKAP TOTAL NOMINAL KHUSUS DATA YANG TERSARING (Dynamic Totals)
 const filteredIncomeTotal = computed(() =>
   filteredTransactionsList.value
     .filter((t) => t.type?.toLowerCase() === "income")
@@ -222,7 +268,6 @@ const filteredBalanceTotal = computed(
   () => filteredIncomeTotal.value - filteredExpenseTotal.value,
 );
 
-// 🟢 JUDUL DINAMIS UNTUK HEADER EXCEL / PDF
 const activeFilterLabel = computed(() => {
   const activeCat = getCategoryValue(selectedCategory.value);
   let catText =
@@ -248,20 +293,12 @@ const activeTotalAmount = computed(() => {
 const categoryFilterItems = computed(() => {
   const defaultItems = [
     { label: "Semua Kategori", value: "all", icon: "i-heroicons-squares-2x2" },
-    {
-      label: "Khusus Kas Anggota",
-      value: "kas_only",
-      icon: "i-heroicons-user-group",
-    },
+    { label: "Khusus Kas Anggota", value: "kas_only", icon: "i-heroicons-user-group" },
     { label: "Gaji", value: "gaji", icon: "i-heroicons-banknotes" },
     { label: "Bonus", value: "bonus", icon: "i-heroicons-gift" },
     { label: "Transportasi", value: "transportasi", icon: "i-heroicons-truck" },
     { label: "Hiburan", value: "hiburan", icon: "i-heroicons-ticket" },
-    {
-      label: "Pendidikan",
-      value: "pendidikan",
-      icon: "i-heroicons-academic-cap",
-    },
+    { label: "Pendidikan", value: "pendidikan", icon: "i-heroicons-academic-cap" },
     { label: "Bulanan", value: "bulanan", icon: "i-heroicons-calendar-days" },
   ];
 
@@ -292,11 +329,10 @@ const categoryFilterItems = computed(() => {
   return [...defaultItems, ...customItems];
 });
 
-// Panggil Composable Ekspor Laporan
+// Composable Ekspor Laporan
 const { exportToExcel, exportToPDF, exportToMatrixExcel, exportToMatrixPDF } =
   useExportReport();
 
-// DROPDOWN EKSPOR: Admin dapat data FULL LENGKAP, Member dapat data BERSIH
 const exportMenuItems = computed(() => [
   [
     {
@@ -343,216 +379,504 @@ const exportMenuItems = computed(() => [
     },
   ],
 ]);
+
+const scrollToSection = (id) => {
+  const el = document.getElementById(id);
+  if (el) {
+    el.scrollIntoView({ behavior: "smooth" });
+  }
+  isMobileSidebarOpen.value = false;
+};
 </script>
 
 <template>
-  <div class="dashboard-page-root">
-    <section
-      class="flex flex-col items-center sm:flex-row sm:items-center justify-between mb-8 sm:mb-10 gap-4"
+  <div class="min-h-screen bg-gray-50/50 dark:bg-gray-950 flex text-gray-900 dark:text-white font-sans selection:bg-primary/20 selection:text-primary">
+    
+    <!-- ======================================================== -->
+    <!-- 1. SIDEBAR (Fixed Desktop & Drawer Mobile)              -->
+    <!-- ======================================================== -->
+
+    <!-- Mobile Drawer Overlay -->
+    <div
+      v-if="isMobileSidebarOpen"
+      class="fixed inset-0 z-40 bg-gray-900/60 backdrop-blur-sm lg:hidden transition-opacity"
+      @click="isMobileSidebarOpen = false"
+    />
+
+    <!-- Sidebar Element -->
+    <aside
+      class="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-900 border-r border-gray-200/80 dark:border-gray-800/80 flex flex-col justify-between transition-transform duration-300 lg:translate-x-0"
+      :class="isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'"
     >
-      <h1 class="text-3xl sm:text-4xl font-extrabold">Ringkasan</h1>
-
-      <div class="flex items-center justify-between sm:justify-start">
-        <div class="flex items-center space-x-2">
-          <UButton
-            icon="i-heroicons-chevron-left"
-            variant="ghost"
-            @click="prevPeriod"
-          />
-          <span
-            class="font-bold text-base sm:text-lg min-w-25 sm:min-w-32 text-center"
-            >{{ periodLabel }}</span
-        >
-          <UButton
-            icon="i-heroicons-chevron-right"
-            variant="ghost"
-            @click="nextPeriod"
-          />
-        </div>
-      </div>
-
-      <div class="mt-2 sm:mt-0">
-        <USelect v-model="selectedView" :items="transactionViewsItems" />
-      </div>
-    </section>
-
-    <section
-      class="grid text-sm grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 sm:gap-16 mb-10 gap-8 ml-1 sm:ml-0"
-    >
-      <Trend
-        title="Pemasukan"
-        :amount="incomeTotal"
-        :lastAmount="previousIncomeTotal"
-        :loading="isLoading"
-        :color="incomeStatusColor"
-      />
-      <Trend
-        title="Pengeluaran"
-        :amount="expenseTotal"
-        :lastAmount="previousExpenseTotal"
-        :loading="isLoading"
-        :color="expenseStatusColor"
-      />
-      <Trend
-        title="Tabungan"
-        :amount="savingsTotal"
-        :lastAmount="previousSavingsTotal"
-        :loading="isLoading"
-        :color="savingsStatusColor"
-      />
-      <Trend
-        title="Total Saldo"
-        :amount="balanceTotal"
-        :lastAmount="previousBalanceTotal"
-        :loading="isLoading"
-        :color="cashColor"
-      />
-    </section>
-
-    <section class="mb-10">
-      <div class="order-1 lg:order-2 lg:col-span-1">
-        <CategoryBreakdown
-          :transactions="transactions"
-          :period="selectedView"
-          :periodLabel="periodLabel"
-          v-model:chartType="activeChartType"
-          v-model:activeCategory="activeCategory"
-          :key="activeChartType"
-        />
-      </div>
-    </section>
-
-    <section
-      class="flex flex-col sm:flex-row ml-1 sm:ml-0 justify-between mb-6 sm:mb-10 gap-2 mt-5"
-    >
+      <!-- Top Section: Brand Logo -->
       <div>
-        <h2 class="text-xl sm:text-2xl font-extrabold">Transaksi</h2>
-        <div class="text-sm sm:text-base text-gray-500 dark:text-gray-400">
-          Terdapat {{ income.length }} pemasukan dan
-          {{ expense.length }} pengeluaran pada periode ini.
-        </div>
-      </div>
-
-      <div
-        class="w-full sm:w-auto mt-4 sm:mt-0 flex items-center justify-center sm:justify-end gap-2"
-      >
-        <UDropdownMenu :items="exportMenuItems">
-          <UButton
-            icon="i-heroicons-arrow-down-tray"
-            color="neutral"
-            variant="outline"
-            class="cursor-pointer sm:w-auto justify-center"
-            label="Unduh Laporan"
-          />
-        </UDropdownMenu>
-        <!-- 🔒 KHUSUS ADMIN (Sembunyi di Mode Member) -->
-        <template v-if="!isMemberMode">
-          <TransactionModal
-            v-model:modelValue="isModalOpen"
-            @update:modelValue="refreshAll"
-            @saved="refreshAll"
-            :transaction="selectedTransaction"
-            :currentBalance="balanceTotal"
-          />
-          <UButton
-            icon="i-heroicons-plus-circle"
-            color="neutral"
-            variant="outline"
-            class="cursor-pointer sm:w-auto justify-center"
-            label="Tambah Transaksi"
-            @click="onAddClick"
-          />
-        </template>
-      </div>
-    </section>
-
-    <section
-      v-if="!isMemberMode"
-      class="flex justify-center sm:justify-end mb-6 ml-1 sm:ml-0 gap-2"
-    >
-      <div class="w-full max-w-42 sm:w-64">
-        <UFormField label="Saring Kategori">
-          <USelectMenu
-            v-model="selectedCategory"
-            :items="categoryFilterItems"
-            value-attribute="value"
-            option-attribute="label"
-            placeholder="Semua Kategori..."
-            class="w-full capitalize cursor-pointer"
-            :ui="{
-              trigger: 'capitalize',
-              content:
-                'w-[var(--radix-select-trigger-width)] min-w-[200px] capitalize',
-            }"
+        <div class="h-18 px-6 flex items-center justify-between border-b border-gray-100 dark:border-gray-800/80">
+          <NuxtLink
+            to="/"
+            class="flex items-center gap-2.5 font-extrabold text-xl tracking-tight select-none group"
+            style="font-family: 'DM Sans', sans-serif"
           >
-            <template #item="{ item }">
-              <div class="flex items-center gap-2">
-                <UIcon
-                  :name="item.icon"
-                  class="w-4 h-4 shrink-0 text-gray-500 dark:text-gray-400"
-                />
-                <span>{{ item.label }}</span>
-              </div>
-            </template>
-          </USelectMenu>
-        </UFormField>
-      </div>
-      <div class="w-full max-w-42 sm:w-64">
-        <UFormField label="Urutkan Berdasarkan">
-          <USelect
-            v-model="sortBy"
-            :items="[
-              { label: 'Tanggal Terbaru', value: 'date_desc' },
-              { label: 'Tanggal Terlama', value: 'date_asc' },
-              { label: 'Nominal Tertinggi', value: 'amount_desc' },
-              { label: 'Nominal Terendah', value: 'amount_asc' },
-            ]"
-            option-attribute="label"
-            value-attribute="value"
-            class="w-full cursor-pointer"
+            <div class="w-8 h-8 rounded-xl bg-primary/10 dark:bg-primary/20 flex items-center justify-center p-1.5 transition-transform group-hover:scale-105">
+              <img src="/favicon.ico" alt="FTracker" class="w-full h-full object-contain" />
+            </div>
+            <span>F<span class="text-primary">Tracker</span></span>
+          </NuxtLink>
+
+          <!-- Close button on Mobile -->
+          <UButton
+            icon="i-heroicons-x-mark"
+            variant="ghost"
+            color="neutral"
+            size="sm"
+            class="lg:hidden cursor-pointer"
+            @click="isMobileSidebarOpen = false"
           />
-        </UFormField>
+        </div>
+
+        <!-- Navigation Menu Links -->
+        <div class="px-3 py-6 space-y-1">
+          <div class="px-3 pb-2 text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+            Menu Utama
+          </div>
+
+          <button
+            type="button"
+            @click="scrollToSection('section-metrics')"
+            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer"
+            :class="activeNavTab === 'overview' ? 'bg-primary/10 text-primary dark:bg-primary/20 font-bold' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'"
+          >
+            <UIcon name="i-heroicons-squares-2x2" class="w-5 h-5" />
+            <span>Ringkasan Kas</span>
+          </button>
+
+          <button
+            type="button"
+            @click="scrollToSection('section-charts')"
+            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
+          >
+            <UIcon name="i-heroicons-chart-pie" class="w-5 h-5" />
+            <span>Analisis & Grafik</span>
+          </button>
+
+          <button
+            type="button"
+            @click="scrollToSection('section-transactions')"
+            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
+          >
+            <UIcon name="i-heroicons-banknotes" class="w-5 h-5" />
+            <span>Tabel Transaksi</span>
+          </button>
+
+          <div class="pt-6 px-3 pb-2 text-[11px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
+            Akuntabilitas
+          </div>
+
+          <UDropdownMenu :items="exportMenuItems">
+            <button
+              type="button"
+              class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer"
+            >
+              <span class="flex items-center gap-3">
+                <UIcon name="i-heroicons-arrow-down-tray" class="w-5 h-5" />
+                <span>Unduh Laporan</span>
+              </span>
+              <UIcon name="i-heroicons-chevron-down" class="w-4 h-4 opacity-50" />
+            </button>
+          </UDropdownMenu>
+
+          <NuxtLink
+            to="/"
+            class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white transition-colors cursor-pointer"
+          >
+            <UIcon name="i-heroicons-globe-alt" class="w-5 h-5" />
+            <span>Portal Publik</span>
+          </NuxtLink>
+        </div>
       </div>
-    </section>
 
-    <section
-      v-if="!isMemberMode"
-      :key="selectedView"
-      :class="{ 'opacity-50': isLoading, 'transition-opacity': true }"
-      class="min-h-150"
-    >
-      <div class="order-2 lg:order-1 lg:col-span-2">
-        <div
-          v-for="(transactionOnDay, date) in filteredGroupByDate"
-          :key="date"
-          class="mb-10"
-        >
-          <TransactionDailySummary :date="date" :transaction="transactionOnDay" />
+      <!-- Bottom Section: User Info, Theme Toggle & Logout -->
+      <div class="p-4 border-t border-gray-100 dark:border-gray-800/80 space-y-3">
+        <!-- User Profile Card -->
+        <div class="flex items-center gap-3 p-2 rounded-xl bg-gray-50 dark:bg-gray-800/50">
+          <img
+            :src="userAvatarUrl"
+            :alt="userDisplayName"
+            class="w-10 h-10 rounded-full object-cover ring-2 ring-primary/20"
+          />
+          <div class="min-w-0 flex-1">
+            <p class="text-xs font-bold text-gray-900 dark:text-white truncate">
+              {{ userDisplayName }}
+            </p>
+            <p class="text-[10px] text-gray-500 dark:text-gray-400 truncate">
+              {{ isMemberMode ? 'Akses Anggota' : 'Bendahara / Admin' }}
+            </p>
+          </div>
+        </div>
 
-          <TransitionGroup name="list-item" tag="div">
-            <Transaction
-              v-for="transaction in transactionOnDay"
-              :key="transaction.id"
-              :transaction="transaction"
-              :totalAmount="activeTotalAmount"
-              :read-only="isMemberMode"
-              @edit="onEditClick(transaction)"
-              @delete="refreshAll()"
+        <!-- Controls: Theme switch & Logout -->
+        <div class="flex items-center gap-2">
+          <UButton
+            :icon="colorMode.value === 'dark' ? 'i-heroicons-moon' : 'i-heroicons-sun'"
+            variant="ghost"
+            color="neutral"
+            size="sm"
+            class="flex-1 cursor-pointer justify-center"
+            @click="colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark'"
+          >
+            <span>{{ colorMode.value === 'dark' ? 'Gelap' : 'Terang' }}</span>
+          </UButton>
+
+          <UButton
+            icon="i-heroicons-arrow-right-on-rectangle"
+            variant="ghost"
+            color="error"
+            size="sm"
+            class="cursor-pointer"
+            title="Keluar"
+            @click="logout"
+          />
+        </div>
+      </div>
+    </aside>
+
+    <!-- ======================================================== -->
+    <!-- 2. MAIN WORKSPACE CONTENT (Beside Sidebar)               -->
+    <!-- ======================================================== -->
+    <div class="flex-1 flex flex-col min-w-0 lg:pl-64">
+      
+      <!-- TOP BAR ALA FIGMA (Sticky Glass Header) -->
+      <header class="sticky top-0 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200/80 dark:border-gray-800/80 px-4 sm:px-8 py-3.5 flex items-center justify-between gap-4">
+        
+        <!-- Left: Hamburger + Greeting -->
+        <div class="flex items-center gap-3 min-w-0">
+          <UButton
+            icon="i-heroicons-bars-3"
+            variant="ghost"
+            color="neutral"
+            size="sm"
+            class="lg:hidden cursor-pointer -ml-1 shrink-0"
+            @click="isMobileSidebarOpen = true"
+          />
+
+          <div class="min-w-0">
+            <h1
+              class="text-base sm:text-xl font-extrabold text-gray-900 dark:text-white truncate"
+              style="font-family: 'DM Sans', sans-serif"
+            >
+              {{ greeting }}, {{ userDisplayName }} 👋
+            </h1>
+            <p class="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
+              Kelola & pantau arus kas secara transparan
+            </p>
+          </div>
+        </div>
+
+        <!-- Right: Period Selector & Quick Actions -->
+        <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+          
+          <!-- Period Navigator Pill -->
+          <div class="flex items-center bg-gray-100 dark:bg-gray-800/80 rounded-xl p-1 border border-gray-200/50 dark:border-gray-700/50">
+            <UButton
+              icon="i-heroicons-chevron-left"
+              variant="ghost"
+              color="neutral"
+              size="xs"
+              class="cursor-pointer hover:bg-white dark:hover:bg-gray-700 rounded-lg"
+              @click="prevPeriod"
             />
-          </TransitionGroup>
-        </div>
+            <span class="text-xs sm:text-sm font-bold px-2 sm:px-3 text-center min-w-20 sm:min-w-28 select-none truncate">
+              {{ periodLabel }}
+            </span>
+            <UButton
+              icon="i-heroicons-chevron-right"
+              variant="ghost"
+              color="neutral"
+              size="xs"
+              class="cursor-pointer hover:bg-white dark:hover:bg-gray-700 rounded-lg"
+              @click="nextPeriod"
+            />
+          </div>
 
-        <div
-          v-if="transactions.length === 0 && !isLoading"
-          class="text-center py-10 text-gray-500"
-        >
-          Tidak ada transaksi pada periode ini.
-        </div>
-      </div>
-    </section>
+          <!-- View Mode (Bulanan/Tahunan/Harian) -->
+          <div class="hidden md:block">
+            <USelect
+              v-model="selectedView"
+              :items="transactionViewsItems"
+              size="sm"
+              class="w-28 cursor-pointer"
+            />
+          </div>
 
-    <section v-if="!isMemberMode && isLoading && transactions.length === 0">
-      <USkeleton v-for="i in 3" :key="i" class="h-8 w-full rounded-md mb-2" />
-    </section>
+          <!-- Tombol Tambah Transaksi Baru (Admin) -->
+          <template v-if="!isMemberMode">
+            <UButton
+              color="primary"
+              size="sm"
+              class="px-3 sm:px-4 py-2 rounded-xl font-bold shadow-sm hover:shadow-md hover:shadow-primary/25 active:scale-95 transition-all cursor-pointer whitespace-nowrap"
+              icon="i-heroicons-plus"
+              @click="onAddClick"
+            >
+              <span class="hidden sm:inline">Transaksi Baru</span>
+              <span class="sm:hidden">Baru</span>
+            </UButton>
+          </template>
+        </div>
+      </header>
+
+      <!-- DASHBOARD MAIN BODY -->
+      <main class="flex-1 p-4 sm:p-8 max-w-7xl w-full mx-auto space-y-8">
+        
+        <!-- ======================================================== -->
+        <!-- STEP 2: METRICS SECTION (4x Metric Cards)                -->
+        <!-- ======================================================== -->
+        <section id="section-metrics" class="space-y-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-white" style="font-family: 'DM Sans', sans-serif">
+              Ringkasan Finansial
+            </h2>
+            <span class="text-xs text-gray-400 dark:text-gray-500 font-medium">
+              Periode {{ periodLabel }}
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            <MetricCard
+              title="Total Saldo Kas"
+              :amount="balanceTotal"
+              :lastAmount="previousBalanceTotal"
+              type="balance"
+              :loading="isLoading"
+              icon="i-heroicons-wallet"
+            />
+            <MetricCard
+              title="Pemasukan Kas"
+              :amount="incomeTotal"
+              :lastAmount="previousIncomeTotal"
+              type="income"
+              :loading="isLoading"
+              icon="i-heroicons-arrow-down-left"
+            />
+            <MetricCard
+              title="Pengeluaran Kas"
+              :amount="expenseTotal"
+              :lastAmount="previousExpenseTotal"
+              type="expense"
+              :loading="isLoading"
+              icon="i-heroicons-arrow-up-right"
+            />
+            <MetricCard
+              title="Tabungan / Cadangan"
+              :amount="savingsTotal"
+              :lastAmount="previousSavingsTotal"
+              type="savings"
+              :loading="isLoading"
+              icon="i-heroicons-banknotes"
+            />
+          </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- STEP 2 & 4: CHARTS & ACTIVITY FEED                       -->
+        <!-- ======================================================== -->
+        <section id="section-charts" class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+          
+          <!-- Sisi Kiri: Category Breakdown & Distribution Chart (7 cols) -->
+          <div class="lg:col-span-7 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800/80 rounded-2xl p-5 sm:p-6 shadow-sm">
+            <CategoryBreakdown
+              :transactions="transactions"
+              :period="selectedView"
+              :periodLabel="periodLabel"
+              v-model:chartType="activeChartType"
+              v-model:activeCategory="activeCategory"
+              :key="activeChartType"
+            />
+          </div>
+
+          <!-- Sisi Kanan: Live Activity Feed (5 cols) -->
+          <div class="lg:col-span-5">
+            <ActivityFeed
+              :transactions="transactions"
+              :loading="isLoading"
+              :limit="5"
+            />
+          </div>
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- STEP 3: TRANSACTION TABLE & CONTROLS                     -->
+        <!-- ======================================================== -->
+        <section id="section-transactions" class="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800/80 rounded-2xl p-5 sm:p-7 shadow-sm space-y-6">
+          
+          <!-- Header Transaksi & Action Ekspor -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-gray-100 dark:border-gray-800/80">
+            <div>
+              <div class="flex items-center gap-2.5">
+                <h3 class="text-xl font-extrabold text-gray-900 dark:text-white" style="font-family: 'DM Sans', sans-serif">
+                  Daftar Transaksi
+                </h3>
+                <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary">
+                  {{ filteredTransactionsList.length }} catatan
+                </span>
+              </div>
+              <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Terdapat <strong class="text-emerald-600 dark:text-emerald-400">{{ income.length }} pemasukan</strong> dan <strong class="text-rose-600 dark:text-rose-400">{{ expense.length }} pengeluaran</strong> pada periode ini.
+              </p>
+            </div>
+
+            <!-- Download & Filter Actions -->
+            <div class="flex items-center gap-2">
+              <UDropdownMenu :items="exportMenuItems">
+                <UButton
+                  icon="i-heroicons-arrow-down-tray"
+                  color="neutral"
+                  variant="outline"
+                  size="sm"
+                  class="cursor-pointer rounded-xl font-semibold"
+                  label="Unduh Laporan"
+                />
+              </UDropdownMenu>
+
+              <template v-if="!isMemberMode">
+                <UButton
+                  icon="i-heroicons-plus-circle"
+                  color="primary"
+                  variant="solid"
+                  size="sm"
+                  class="cursor-pointer rounded-xl font-semibold"
+                  label="Tambah Transaksi"
+                  @click="onAddClick"
+                />
+              </template>
+            </div>
+          </div>
+
+          <!-- Controls Bar: Search, Category Filter, Sort -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <!-- Search Bar -->
+            <div>
+              <UInput
+                v-model="searchQuery"
+                placeholder="Cari transaksi..."
+                icon="i-heroicons-magnifying-glass"
+                size="sm"
+                class="w-full"
+              />
+            </div>
+
+            <!-- Category Filter -->
+            <div>
+              <USelectMenu
+                v-model="selectedCategory"
+                :items="categoryFilterItems"
+                value-attribute="value"
+                option-attribute="label"
+                placeholder="Semua Kategori..."
+                size="sm"
+                class="w-full cursor-pointer"
+              >
+                <template #item="{ item }">
+                  <div class="flex items-center gap-2">
+                    <UIcon :name="item.icon" class="w-4 h-4 text-gray-400 shrink-0" />
+                    <span class="truncate">{{ item.label }}</span>
+                  </div>
+                </template>
+              </USelectMenu>
+            </div>
+
+            <!-- Sort By -->
+            <div>
+              <USelect
+                v-model="sortBy"
+                :items="[
+                  { label: 'Tanggal Terbaru', value: 'date_desc' },
+                  { label: 'Tanggal Terlama', value: 'date_asc' },
+                  { label: 'Nominal Tertinggi', value: 'amount_desc' },
+                  { label: 'Nominal Terendah', value: 'amount_asc' },
+                ]"
+                option-attribute="label"
+                value-attribute="value"
+                size="sm"
+                class="w-full cursor-pointer"
+              />
+            </div>
+          </div>
+
+          <!-- Transaction Daily List -->
+          <div
+            :class="{ 'opacity-50': isLoading, 'transition-opacity': true }"
+            class="space-y-6 pt-2"
+          >
+            <!-- Daily Summary Group -->
+            <div
+              v-for="(transactionOnDay, date) in filteredGroupByDate"
+              :key="date"
+              class="space-y-2"
+            >
+              <TransactionDailySummary :date="date" :transaction="transactionOnDay" />
+
+              <div class="space-y-1">
+                <Transaction
+                  v-for="transaction in transactionOnDay"
+                  :key="transaction.id"
+                  :transaction="transaction"
+                  :totalAmount="activeTotalAmount"
+                  :read-only="isMemberMode"
+                  @edit="onEditClick(transaction)"
+                  @delete="refreshAll"
+                />
+              </div>
+            </div>
+
+            <!-- Empty State -->
+            <div
+              v-if="filteredTransactionsList.length === 0 && !isLoading"
+              class="text-center py-16 px-4 border border-dashed border-gray-200 dark:border-gray-800 rounded-2xl"
+            >
+              <div class="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-400 flex items-center justify-center mx-auto mb-3">
+                <UIcon name="i-heroicons-document-magnifying-glass" class="w-6 h-6" />
+              </div>
+              <h4 class="text-sm font-bold text-gray-900 dark:text-white mb-1">
+                Tidak ada transaksi ditemukan
+              </h4>
+              <p class="text-xs text-gray-500 dark:text-gray-400 max-w-sm mx-auto mb-4">
+                Belum ada mutasi keuangan yang cocok dengan filter atau kata kunci pencarian Anda pada periode ini.
+              </p>
+              <UButton
+                v-if="!isMemberMode"
+                color="primary"
+                size="xs"
+                variant="subtle"
+                label="Catat Transaksi Pertama"
+                icon="i-heroicons-plus"
+                @click="onAddClick"
+              />
+            </div>
+
+            <!-- Skeleton Loading -->
+            <div v-if="isLoading && filteredTransactionsList.length === 0" class="space-y-3">
+              <USkeleton v-for="i in 4" :key="i" class="h-16 w-full rounded-xl" />
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- Modal Form Tambah / Edit Transaksi -->
+    <template v-if="!isMemberMode">
+      <TransactionModal
+        v-model:modelValue="isModalOpen"
+        @update:modelValue="refreshAll"
+        @saved="refreshAll"
+        :transaction="selectedTransaction"
+        :currentBalance="balanceTotal"
+      />
+    </template>
   </div>
 </template>
+
+<style scoped>
+/* Transisi Smooth */
+button, a {
+  -webkit-tap-highlight-color: transparent;
+}
+</style>
