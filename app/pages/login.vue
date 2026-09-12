@@ -2,11 +2,11 @@
 const success = ref(false);
 const email = ref("");
 const password = ref("");
-const showPassword = ref(false); // Untuk toggle visibility password
+const showPassword = ref(false);
 const authMode = ref("login");
 const isLoading = ref(false);
 const supabase = useSupabaseClient();
-const toast = useToast(); // Instance Toast resmi dari Nuxt UI
+const toast = useToast();
 
 const user = useSupabaseUser();
 
@@ -14,18 +14,17 @@ watch(
   user,
   (user) => {
     if (user) {
-      return navigateTo("/dashboard"); // Redirect ke homepage jika sudah login
+      return navigateTo("/dashboard");
     }
   },
   { immediate: true },
 );
 
 definePageMeta({
-  layout: "default",
+  layout: false, // Menggunakan layout false agar full-screen seperti di Figma
 });
 
 const handleSubmit = async () => {
-  // validasi mencegah kirim data kosong
   if (!email.value) {
     return toast.add({
       title: "Gagal",
@@ -35,7 +34,6 @@ const handleSubmit = async () => {
     });
   }
 
-  // jika bukan mode magic-link wajib isi password
   if (authMode.value !== "magic-link" && !password.value) {
     return toast.add({
       title: "Gagal",
@@ -45,20 +43,17 @@ const handleSubmit = async () => {
     });
   }
 
-  // proses ke server supabase
   isLoading.value = true;
   try {
     const siteUrl = window.location.origin;
 
     if (authMode.value === "login") {
-      // LOGIC LOGIN PASSWORD
       const { error } = await supabase.auth.signInWithPassword({
         email: email.value,
         password: password.value,
       });
       if (error) throw error;
 
-      // TOAST LOGIN SUKSES
       toast.add({
         title: "Login Berhasil!",
         description: "Selamat datang kembali di FTracker.",
@@ -66,26 +61,21 @@ const handleSubmit = async () => {
         icon: "i-heroicons-check-circle",
       });
     } else if (authMode.value === "register") {
-      // LOGIC DAFTAR (REGISTER) PASSWORD
       const { error } = await supabase.auth.signUp({
         email: email.value,
         password: password.value,
       });
       if (error) throw error;
 
-      // 1. UPDATE PESAN SUKSES DAFTAR BIAR USER LANGSUNG FAHAM BUKA GMAIL
       toast.add({
         title: "Registrasi Berhasil! 📩",
         description: `Link verifikasi telah dikirim ke ${email.value}. Silakan periksa inbox Gmail Anda untuk mengaktifkan akun.`,
         color: "success",
         icon: "i-heroicons-paper-airplane",
-        timeout: 8000, // Tampil lebih lama (8 detik) agar terbaca utuh
+        timeout: 8000,
       });
-
-      // Pindahkan mode form ke Login setelah daftar
       authMode.value = "login";
     } else if (authMode.value === "magic-link") {
-      // LOGIC MAGIC LINK (OTP)
       const { error } = await supabase.auth.signInWithOtp({
         email: email.value,
         options: {
@@ -94,45 +84,26 @@ const handleSubmit = async () => {
       });
       if (error) throw error;
 
-      // TOAST MAGIC LINK SUKSES
       toast.add({
         title: "Cek Email Anda",
         description: `Kami telah mengirimkan link login ke ${email.value}. Silahkan periksa kotak masuk.`,
         color: "success",
         icon: "i-heroicons-check-circle",
       });
-
-      success.value = true; // Munculkan layar "Cek Email"
+      success.value = true;
     }
   } catch (error) {
     let errorMessage = error.message;
-
-    // PENERJEMAH ERROR SUPABASE KE BAHASA INDONESIA
     if (errorMessage.includes("Invalid login credentials")) {
       errorMessage = "Email atau Password salah!";
     } else if (errorMessage.includes("Email not confirmed")) {
-      // 👈 TERJEMAHAN KHUSUS UNTUK EMAIL BELUM DIKONFIRMASI
-      errorMessage =
-        "Email Anda belum dikonfirmasi! Silakan buka Gmail dan klik link verifikasi yang telah kami kirimkan.";
+      errorMessage = "Email Anda belum dikonfirmasi! Silakan buka Gmail dan klik link verifikasi.";
     } else if (errorMessage.includes("Password should be at least")) {
       errorMessage = "Password minimal 6 karakter!";
-    } else if (
-      errorMessage.includes("missing email or phone") ||
-      errorMessage.includes("missing email")
-    ) {
+    } else if (errorMessage.includes("missing email")) {
       errorMessage = "Email wajib diisi!";
-    } else if (
-      errorMessage.includes("User already exists") ||
-      errorMessage.includes("User already registered")
-    ) {
-      // Menangkap "User already registered"
-      errorMessage =
-        "Email ini sudah terdaftar! Silakan login menggunakan Magic Link.";
-    } else if (
-      errorMessage.includes("Anonymous sign-ins are not disabled") ||
-      errorMessage.includes("Signup requires password")
-    ) {
-      errorMessage = "Password wajib diisi dengan benar !";
+    } else if (errorMessage.includes("User already exists")) {
+      errorMessage = "Email ini sudah terdaftar! Silakan login menggunakan Magic Link.";
     }
     toast.add({
       title: "Gagal",
@@ -146,7 +117,6 @@ const handleSubmit = async () => {
 };
 
 const isResetting = ref(false);
-
 const handleForgotPassword = async () => {
   if (!email.value) {
     return toast.add({
@@ -161,11 +131,9 @@ const handleForgotPassword = async () => {
   try {
     const siteUrl = window.location.origin;
     const { error } = await supabase.auth.resetPasswordForEmail(email.value, {
-      redirectTo: `${siteUrl}/reset-password`, // Diarahkan ke halaman reset password baru
+      redirectTo: `${siteUrl}/reset-password`,
     });
-
     if (error) throw error;
-
     toast.add({
       title: "Email Reset Terkirim",
       description: `Tautan pengaturan ulang kata sandi telah dikirim ke ${email.value}`,
@@ -186,175 +154,204 @@ const handleForgotPassword = async () => {
 </script>
 
 <template>
-  <div class="max-w-md mx-auto mt-20 px-4">
-    <UCard v-if="!success">
-      <template #header>
-        <div class="flex items-center justify-between">
-          <h3 class="text-lg font-bold leading-6 text-gray-900 dark:text-white">
-            <span v-if="authMode === 'login'">Masuk ke FTracker</span>
-            <span v-else-if="authMode === 'register'">Daftar Akun Baru</span>
-            <span v-else>Masuk Tanpa Password</span>
-          </h3>
+  <div class="min-h-screen flex bg-white dark:bg-gray-950">
+    <!-- PANEL KIRI: Branding (Konsisten dengan Reset Password & Login Figma) -->
+    <div
+      class="hidden lg:flex flex-col justify-between w-1/2 p-12 relative overflow-hidden bg-primary"
+    >
+      <div class="absolute bottom-0 left-0 w-96 h-96 rounded-full opacity-20 pointer-events-none bg-white blur-3xl" />
+      <div class="absolute top-0 right-0 w-64 h-64 rounded-full opacity-10 pointer-events-none bg-white blur-3xl" />
+
+      <div class="relative z-10">
+        <NuxtLink to="/" class="text-xl font-bold text-white" style="font-family: 'DM Sans', sans-serif">
+          F<span class="opacity-80">Tracker</span>
+        </NuxtLink>
+      </div>
+
+      <div class="relative z-10">
+        <div class="flex gap-1 mb-4">
+          <span v-for="i in 5" :key="i" class="text-yellow-300 text-lg">★</span>
         </div>
-      </template>
-
-      <form @submit.prevent="handleSubmit" class="space-y-4">
-        <!-- Input Email -->
-        <UFormField label="Email" required name="email">
-          <UInput
-            type="email"
-            placeholder="email@contoh.com"
-            v-model="email"
-            icon="i-heroicons-envelope"
-            :loading="isLoading"
-            class="w-full"
-          />
-        </UFormField>
-
-        <!-- Input Password (Hanya muncul jika BUKAN mode magic link) -->
-        <UFormField
-          v-if="authMode !== 'magic-link'"
-          label="Password"
-          required
-          name="password"
+        <blockquote
+          class="text-2xl font-semibold leading-snug mb-6 text-white"
+          style="font-family: 'DM Sans', sans-serif"
         >
-          <UInput
-            :type="showPassword ? 'text' : 'password'"
-            placeholder="••••••••"
-            v-model="password"
-            icon="i-heroicons-lock-closed"
-            :loading="isLoading"
-            class="w-full"
-          >
-            <!-- Tombol Ikon Mata di Sebelah Kanan Input -->
-            <template #trailing>
-              <UButton
-                color="neutral"
-                variant="link"
-                size="xs"
-                :icon="
-                  showPassword ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'
-                "
-                class="cursor-pointer text-gray-400 hover:text-primary p-0"
-                @click="showPassword = !showPassword"
-              />
-            </template>
-          </UInput>
-        </UFormField>
-
-        <!-- Tombol Submit -->
-        <UButton
-          type="submit"
-          color="primary"
-          variant="solid"
-          block
-          class="mt-6"
-          :loading="isLoading"
-          :icon="authMode === 'magic-link' ? 'i-heroicons-sparkles' : ''"
-        >
-          {{
-            authMode === "login"
-              ? "Masuk"
-              : authMode === "register"
-                ? "Daftar"
-                : "Kirim Magic Link"
-          }}
-        </UButton>
-        <!-- Tombol Lupa Password (Hanya muncul jika mode login biasa/password) -->
-        <div v-if="authMode === 'login'" class="text-right mt-1">
-          <button
-            type="button"
-            class="text-xs text-gray-500 hover:text-primary transition font-medium cursor-pointer"
-            @click="handleForgotPassword"
-            :disabled="isResetting"
-          >
-            Lupa password? / Reset Password
-          </button>
-        </div>
-      </form>
-
-      <!-- Toggle Mode Bawah -->
-      <div class="mt-6 space-y-3 text-center text-sm">
-        <!-- Pemisah Visual Pakai Tailwind -->
-        <div class="relative flex items-center py-2">
-          <div class="grow border-t border-gray-200 dark:border-gray-800"></div>
-          <span class="shrink-0 mx-4 text-gray-400 text-xs font-medium"
-            >ATAU</span
-          >
-          <div class="grow border-t border-gray-200 dark:border-gray-800"></div>
-        </div>
-
-        <div class="flex flex-col space-y-2">
-          <!-- Tombol Toggle Dinamis -->
-          <UButton
-            variant="ghost"
-            color="neutral"
-            block
-            :icon="
-              authMode === 'magic-link'
-                ? 'i-heroicons-key'
-                : 'i-heroicons-envelope-open'
-            "
-            @click="
-              authMode = authMode === 'magic-link' ? 'login' : 'magic-link'
-            "
-          >
-            {{
-              authMode === "magic-link"
-                ? "Kembali Pakai Password"
-                : "Login Pakai Magic Link"
-            }}
-          </UButton>
-
-          <!-- Toggle Login / Register -->
-          <div
-            v-show="authMode !== 'magic-link'"
-            class="text-gray-500 dark:text-gray-400 mt-2"
-          >
-            {{
-              authMode === "login" ? "Belum punya akun?" : "Sudah punya akun?"
-            }}
-            <button
-              type="button"
-              @click="authMode = authMode === 'login' ? 'register' : 'login'"
-              class="text-primary font-semibold hover:underline"
-              :disabled="isLoading"
-            >
-              {{ authMode === "login" ? "Daftar di sini" : "Masuk di sini" }}
-            </button>
+          "Kelola keuangan komunitas dengan transparansi penuh. Mudah, cepat, dan akuntabel untuk semua anggota."
+        </blockquote>
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold bg-white text-primary">
+            FT
+          </div>
+          <div class="text-white">
+            <p class="text-sm font-semibold">FTracker Team</p>
+            <p class="text-xs opacity-70">Keamanan Terjamin</p>
           </div>
         </div>
       </div>
-    </UCard>
+    </div>
 
-    <!-- Halaman Sukses Khusus Magic Link -->
-    <UCard v-else class="text-center">
-      <template #header>
-        <h3
-          class="text-base font-semibold leading-6 text-gray-900 dark:text-white"
-        >
-          Email Telah Dikirim.
-        </h3>
-      </template>
-      <div class="text-center space-y-4">
-        <UIcon
-          name="i-heroicons-paper-airplane"
-          class="w-12 h-12 text-primary mx-auto"
-        />
-        <p class="text-gray-500 dark:text-gray-400">
-          Silakan cek email <strong>{{ email }}</strong> untuk mengonfirmasi
-          login kamu.
-        </p>
+    <!-- PANEL KANAN: Form Auth -->
+    <div class="flex-1 flex items-center justify-center px-6 py-12">
+      <div v-if="!success" class="w-full max-w-sm">
+        <!-- Header Form -->
+        <div class="mb-8">
+          <div
+            class="inline-flex items-center justify-center w-11 h-11 rounded-xl mb-5 bg-primary/10 text-primary"
+          >
+            <UIcon :name="authMode === 'magic-link' ? 'i-heroicons-sparkles' : 'i-heroicons-lock-closed'" class="w-6 h-6" />
+          </div>
+          <h1
+            class="text-3xl font-bold mb-2"
+            style="font-family: 'DM Sans', sans-serif; letter-spacing: -0.02em"
+          >
+            <span v-if="authMode === 'login'">Selamat Datang</span>
+            <span v-else-if="authMode === 'register'">Buat Akun Baru</span>
+            <span v-else>Login Cepat</span>
+          </h1>
+          <p class="text-sm text-gray-500 dark:text-gray-400">
+            {{ authMode === 'login' ? 'Silakan masuk untuk mengelola keuangan Anda.' : authMode === 'register' ? 'Daftar sekarang untuk mulai mencatat kas.' : 'Masuk menggunakan tautan sekali klik lewat email.' }}
+          </p>
+        </div>
+
+        <!-- Form -->
+        <form @submit.prevent="handleSubmit" class="flex flex-col gap-4">
+          <div class="space-y-4">
+            <!-- Email Input -->
+            <div class="flex flex-col gap-1.5">
+              <label class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Email</label>
+              <UInput
+                v-model="email"
+                type="email"
+                placeholder="email@contoh.com"
+                icon="i-heroicons-envelope"
+                class="w-full"
+                :loading="isLoading"
+                variant="outline"
+              />
+            </div>
+
+            <!-- Password Input (Hidden in Magic Link mode) -->
+            <div v-if="authMode !== 'magic-link'" class="flex flex-col gap-1.5">
+              <div class="flex justify-between items-center">
+                <label class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Password</label>
+                <button
+                  type="button"
+                  @click="handleForgotPassword"
+                  class="text-[10px] font-bold text-primary hover:underline"
+                  :disabled="isResetting"
+                >
+                  Lupa Password?
+                </button>
+              </div>
+              <UInput
+                v-model="password"
+                :type="showPassword ? 'text' : 'password'"
+                placeholder="••••••••"
+                icon="i-heroicons-lock-closed"
+                class="w-full"
+                :loading="isLoading"
+                variant="outline"
+              >
+                <template #trailing>
+                  <UButton
+                    color="neutral"
+                    variant="link"
+                    size="xs"
+                    :icon="showPassword ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'"
+                    class="p-0 text-gray-400"
+                    @click="showPassword = !showPassword"
+                  />
+                </template>
+              </UInput>
+            </div>
+          </div>
+
+          <UButton
+            type="submit"
+            block
+            size="lg"
+            color="primary"
+            class="mt-6 py-3 rounded-xl font-bold transition-all shadow-md hover:shadow-primary/30"
+            :loading="isLoading"
+          >
+            {{
+              authMode === "login"
+                ? "Masuk"
+                : authMode === "register"
+                  ? "Daftar Sekarang"
+                  : "Kirim Magic Link"
+            }}
+          </UButton>
+        </form>
+
+        <!-- Mode Toggle Section -->
+        <div class="mt-8 space-y-4 text-center">
+          <div class="relative flex items-center py-2">
+            <div class="grow border-t border-gray-200 dark:border-gray-800"></div>
+            <span class="shrink-0 mx-4 text-gray-400 text-xs font-medium uppercase">Atau</span>
+            <div class="grow border-t border-gray-200 dark:border-gray-800"></div>
+          </div>
+
+          <div class="flex flex-col gap-3">
+            <UButton
+              variant="ghost"
+              color="neutral"
+              block
+              class="rounded-xl py-2"
+              :icon="authMode === 'magic-link' ? 'i-heroicons-key' : 'i-heroicons-envelope-open'"
+              @click="authMode = authMode === 'magic-link' ? 'login' : 'magic-link'"
+            >
+              {{ authMode === "magic-link" ? "Kembali Pakai Password" : "Login Pakai Magic Link" }}
+            </UButton>
+
+            <div v-show="authMode !== 'magic-link'" class="text-sm text-gray-500 dark:text-gray-400">
+              {{ authMode === "login" ? "Belum punya akun?" : "Sudah punya akun?" }}
+              <button
+                type="button"
+                @click="authMode = authMode === 'login' ? 'register' : 'login'"
+                class="text-primary font-bold hover:underline ml-1"
+                :disabled="isLoading"
+              >
+                {{ authMode === "login" ? "Daftar di sini" : "Masuk di sini" }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUCCESS STATE (Magic Link) -->
+      <div v-else class="w-full max-w-sm text-center">
+        <div class="mb-6">
+          <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 text-primary mb-4">
+            <UIcon name="i-heroicons-paper-airplane" class="w-8 h-8" />
+          </div>
+          <h2 class="text-2xl font-bold mb-2">Cek Email Anda</h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400">
+            Kami telah mengirimkan tautan login ke <br>
+            <strong class="text-gray-900 dark:text-white">{{ email }}</strong>.
+          </p>
+        </div>
         <UButton
-          variant="ghost"
-          @click="
-            success = false;
-            authMode = 'login';
-          "
+          variant="outline"
+          color="neutral"
+          block
+          class="rounded-xl"
+          @click="success = false; authMode = 'login';"
         >
-          Kembali ke login
+          Kembali ke Login
         </UButton>
       </div>
-    </UCard>
+    </div>
   </div>
 </template>
+
+<style scoped>
+:deep(.u-input) {
+  border-radius: 0.75rem !important;
+  transition: all 0.2s ease;
+}
+:deep(.u-input:focus) {
+  border-color: rgb(var(--color-primary-500)) !important;
+  box-shadow: 0 0 0 2px rgba(var(--color-primary-500), 0.1) !important;
+}
+</style>
