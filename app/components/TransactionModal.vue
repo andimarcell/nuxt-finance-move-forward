@@ -11,6 +11,11 @@ import {
 } from "vue";
 import { z } from "zod";
 import { transactionTypes } from "~/utils/constants";
+import {
+  addDemoTransaction,
+  updateDemoTransaction,
+  getSharedDemoStore,
+} from "~/utils/demoData";
 
 const formRef = useTemplateRef("form");
 const textareaRef = ref(null);
@@ -21,6 +26,10 @@ const props = defineProps({
   currentBalance: {
     type: Number,
     default: 0,
+  },
+  isDemo: {
+    type: Boolean,
+    default: false,
   },
 });
 
@@ -194,6 +203,26 @@ onMounted(() => {
 });
 
 const fetchUserCategories = async () => {
+  if (props.isDemo) {
+    const demoItems = getSharedDemoStore();
+    const uniqueMap = {};
+    demoItems.forEach((t) => {
+      const cat = t.category ? t.category.toLowerCase().trim() : "";
+      if (
+        cat &&
+        !defaultCategories.map((d) => d.value).includes(cat) &&
+        cat !== "lainnya"
+      ) {
+        uniqueMap[cat] = t.category_icon || "i-heroicons-tag";
+      }
+    });
+    customCategories.value = Object.keys(uniqueMap).map((cat) => ({
+      name: cat,
+      icon: uniqueMap[cat],
+    }));
+    return;
+  }
+
   if (!user.value) return;
 
   try {
@@ -283,6 +312,28 @@ async function onSubmit(event) {
 
     // Selalu simpan ikon pilihan terbaru ke payload
     payload.category_icon = customIcon.value;
+
+    // JIKA DALAM MODE DEMO: Simpan ke local demo store tanpa memanggil Supabase
+    if (props.isDemo) {
+      if (isEditing.value) {
+        updateDemoTransaction(props.transaction.id, payload);
+      } else {
+        addDemoTransaction(payload);
+      }
+
+      toast.add({
+        title: "Sukses (Mode Demo)",
+        description: isEditing.value
+          ? "Transaksi demo berhasil diperbarui!"
+          : "Transaksi demo berhasil ditambahkan!",
+        color: "success",
+        icon: "i-heroicons-check-circle",
+      });
+
+      isModalOpen.value = false;
+      emit("saved");
+      return;
+    }
 
     // 1. Update/Simpan transaksi saat ini
     if (isEditing.value) {

@@ -39,6 +39,12 @@ const isMemberMode = config.public.memberMode;
 const user = useSupabaseUser();
 const supabase = useSupabaseClient();
 const colorMode = useColorMode();
+const route = useRoute();
+
+// Deteksi Mode Demo
+const isDemo = computed(() => {
+  return !user.value && route.query.demo === "true";
+});
 
 const selectedView = ref(transactionViewsItems[1]); // Bulanan
 const referenceDate = ref(new Date());
@@ -57,6 +63,7 @@ const greeting = computed(() => {
 });
 
 const userDisplayName = computed(() => {
+  if (isDemo.value) return "Tamu Demo";
   if (!user.value) return "Pengguna";
   if (user.value.user_metadata?.full_name) {
     return user.value.user_metadata.full_name.split(" ")[0];
@@ -69,6 +76,9 @@ const userDisplayName = computed(() => {
 });
 
 const userAvatarUrl = computed(() => {
+  if (isDemo.value) {
+    return "https://ui-avatars.com/api/?name=Demo+Tamu&background=10b981&color=fff&bold=true";
+  }
   if (user.value?.user_metadata?.avatar_url) {
     return user.value.user_metadata.avatar_url;
   }
@@ -77,6 +87,10 @@ const userAvatarUrl = computed(() => {
 });
 
 const logout = async () => {
+  if (isDemo.value) {
+    navigateTo("/", { replace: true });
+    return;
+  }
   await supabase.auth.signOut();
   clearNuxtData();
   navigateTo("/login", { replace: true });
@@ -508,7 +522,7 @@ const scrollToSection = (id) => {
               {{ userDisplayName }}
             </p>
             <p class="text-[10px] text-gray-500 dark:text-gray-400 truncate">
-              {{ isMemberMode ? 'Akses Anggota' : 'Bendahara / Admin' }}
+              {{ isDemo ? 'Pengunjung (Mode Demo)' : isMemberMode ? 'Akses Anggota' : 'Bendahara / Admin' }}
             </p>
           </div>
         </div>
@@ -532,7 +546,7 @@ const scrollToSection = (id) => {
             color="error"
             size="sm"
             class="cursor-pointer"
-            title="Keluar"
+            :title="isDemo ? 'Keluar dari Demo' : 'Keluar'"
             @click="logout"
           />
         </div>
@@ -544,6 +558,38 @@ const scrollToSection = (id) => {
     <!-- ======================================================== -->
     <div class="flex-1 flex flex-col min-w-0 lg:pl-64">
       
+      <!-- DEMO MODE FLOATING BANNER -->
+      <div
+        v-if="isDemo"
+        class="bg-amber-500/10 dark:bg-amber-500/15 border-b border-amber-500/20 px-4 sm:px-8 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs text-amber-900 dark:text-amber-200"
+      >
+        <div class="flex items-center gap-2 font-medium">
+          <UIcon name="i-heroicons-information-circle" class="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+          <span>
+            <strong>Mode Demonstrasi:</strong> Anda sedang menjelajahi simulasi data kas. Perubahan bersifat sementara.
+          </span>
+        </div>
+        <div class="flex items-center gap-2">
+          <UButton
+            to="/login?mode=register"
+            size="xs"
+            color="primary"
+            class="rounded-lg font-bold px-3 py-1 cursor-pointer"
+          >
+            Daftar Akun Gratis
+          </UButton>
+          <UButton
+            to="/"
+            size="xs"
+            variant="ghost"
+            color="neutral"
+            class="rounded-lg font-medium px-2 py-1 cursor-pointer"
+          >
+            Kembali
+          </UButton>
+        </div>
+      </div>
+
       <!-- TOP BAR ALA FIGMA (Sticky Glass Header) -->
       <header class="sticky top-0 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200/80 dark:border-gray-800/80 px-4 sm:px-8 py-3.5 flex items-center justify-between gap-4">
         
@@ -559,12 +605,23 @@ const scrollToSection = (id) => {
           />
 
           <div class="min-w-0">
-            <h1
-              class="text-base sm:text-xl font-extrabold text-gray-900 dark:text-white truncate"
-              style="font-family: 'DM Sans', sans-serif"
-            >
-              {{ greeting }}, {{ userDisplayName }} 👋
-            </h1>
+            <div class="flex items-center gap-2">
+              <h1
+                class="text-base sm:text-xl font-extrabold text-gray-900 dark:text-white truncate"
+                style="font-family: 'DM Sans', sans-serif"
+              >
+                {{ greeting }}, {{ userDisplayName }} 
+              </h1>
+              <UBadge
+                v-if="isDemo"
+                color="warning"
+                variant="subtle"
+                size="xs"
+                class="rounded-full px-2 py-0.5 font-bold uppercase tracking-wider text-[10px]"
+              >
+                Demo
+              </UBadge>
+            </div>
             <p class="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
               Kelola & pantau arus kas secara transparan
             </p>
@@ -821,6 +878,7 @@ const scrollToSection = (id) => {
                   :transaction="transaction"
                   :totalAmount="activeTotalAmount"
                   :read-only="isMemberMode"
+                  :is-demo="isDemo"
                   @edit="onEditClick(transaction)"
                   @delete="refreshAll"
                 />
@@ -869,6 +927,7 @@ const scrollToSection = (id) => {
         @saved="refreshAll"
         :transaction="selectedTransaction"
         :currentBalance="balanceTotal"
+        :is-demo="isDemo"
       />
     </template>
   </div>

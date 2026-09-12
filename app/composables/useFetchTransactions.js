@@ -1,12 +1,47 @@
-export const useFetchTransactions = (period) => {
+import { getSharedDemoStore } from "~/utils/demoData";
+
+export const useFetchTransactions = (period, options = {}) => {
   const supabase = useSupabaseClient();
   const user = useSupabaseUser();
+  const route = useRoute();
   const transactions = ref([]);
   const isLoading = ref(false);
   const allTimeBalance = ref(0);
 
+  const isDemo = computed(() => {
+    if (options?.isDemo !== undefined) return Boolean(options.isDemo);
+    return !user.value && route.query.demo === "true";
+  });
+
   const fetchTransactions = async () => {
-    if (!user.value || !period.value?.start || !period.value?.end) return;
+    if (!period.value?.start || !period.value?.end) return;
+
+    if (isDemo.value) {
+      isLoading.value = true;
+      const allDemo = getSharedDemoStore();
+      const startTime = period.value.start.getTime();
+      const endTime = period.value.end.getTime();
+
+      transactions.value = allDemo
+        .filter((t) => {
+          const time = new Date(t.created_at).getTime();
+          return time >= startTime && time <= endTime;
+        })
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+      allTimeBalance.value = allDemo
+        .filter((t) => new Date(t.created_at).getTime() <= endTime)
+        .reduce((acc, t) => {
+          const type = t.type?.toLowerCase();
+          const amount = Number(t.amount);
+          return type === "income" ? acc + amount : acc - amount;
+        }, 0);
+
+      isLoading.value = false;
+      return;
+    }
+
+    if (!user.value) return;
     isLoading.value = true;
     try {
       const startDate = period.value.start.toISOString();
@@ -53,10 +88,11 @@ export const useFetchTransactions = (period) => {
     () => [
       period.value?.start?.toISOString(),
       period.value?.end?.toISOString(),
-      user.value?.id
+      user.value?.id,
+      isDemo.value,
     ],
     () => {
-      if (user.value) {
+      if (user.value || isDemo.value) {
         fetchTransactions();
       } else {
         transactions.value = [];

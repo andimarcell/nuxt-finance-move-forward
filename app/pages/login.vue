@@ -438,6 +438,17 @@ const handleForgotPassword = async () => {
                   {{ authMode === "login" ? "Daftar di sini" : "Masuk di sini" }}
                 </button>
               </div>
+
+              <!-- Quick Demo Access Link -->
+              <div class="pt-2 border-t border-gray-100 dark:border-gray-800/80 text-center">
+                <NuxtLink
+                  to="/dashboard?demo=true"
+                  class="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 hover:text-primary dark:hover:text-primary transition-colors cursor-pointer"
+                >
+                  <UIcon name="i-heroicons-sparkles" class="w-4 h-4 text-amber-500" />
+                  <span>Coba langsung tanpa login: <strong>Buka Dashboard Demo</strong></span>
+                </NuxtLink>
+              </div>
             </div>
           </div>
         </div>

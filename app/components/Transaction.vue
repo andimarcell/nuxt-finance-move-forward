@@ -1,4 +1,6 @@
 <script setup>
+import { deleteDemoTransaction } from "~/utils/demoData";
+
 const props = defineProps({
   transaction: Object,
   totalAmount: {
@@ -7,6 +9,10 @@ const props = defineProps({
   },
   // 🟢 TAMBAHAN BARU: Menerima status read-only dari dashboard utama
   readOnly: {
+    type: Boolean,
+    default: false,
+  },
+  isDemo: {
     type: Boolean,
     default: false,
   },
@@ -64,6 +70,17 @@ const deleteTransaction = async () => {
 
   isLoading.value = true;
   try {
+    if (props.isDemo) {
+      deleteDemoTransaction(props.transaction.id);
+      toast.add({
+        title: "Transaksi demo berhasil dihapus!",
+        icon: "i-heroicons-check-circle-20-solid",
+        color: "success",
+      });
+      emit("delete", props.transaction.id);
+      return;
+    }
+
     await supabase.from("transactions").delete().eq("id", props.transaction.id);
     toast.add({
       title: "Transaksi berhasil dihapus!",

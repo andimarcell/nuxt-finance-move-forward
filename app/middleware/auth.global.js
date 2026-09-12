@@ -1,8 +1,9 @@
 export default defineNuxtRouteMiddleware((to, from) => {
   const user = useSupabaseUser();
+  const isDemo = to.query.demo === "true";
 
-  // Jika user belum login dan mencoba masuk ke dashboard (index)
-  if (!user.value && to.path === "/dashboard") {
+  // Jika user belum login dan mencoba masuk ke dashboard tanpa mode demo
+  if (!user.value && to.path === "/dashboard" && !isDemo) {
     return navigateTo("/login");
   }
 

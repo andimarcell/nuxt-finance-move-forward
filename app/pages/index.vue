@@ -247,7 +247,7 @@ onBeforeUnmount(() => {
             <UIcon name="i-heroicons-arrow-right" class="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1" />
           </UButton>
           <UButton
-            to="/dashboard"
+            to="/dashboard?demo=true"
             size="xl"
             variant="outline"
             color="neutral"
@@ -457,7 +457,7 @@ onBeforeUnmount(() => {
               {{ user ? 'Buka Dashboard' : 'Daftar Sekarang — Gratis' }}
             </UButton>
             <UButton
-              to="/dashboard"
+              to="/dashboard?demo=true"
               size="xl"
               variant="outline"
               class="w-full sm:w-auto px-8 py-4 rounded-full font-semibold border-white/40 text-white hover:bg-white/10 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer justify-center"
