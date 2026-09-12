@@ -263,7 +263,7 @@ const handleForgotPassword = async () => {
     <!-- PANEL KANAN: Form Auth -->
     <div class="flex-1 flex flex-col justify-center items-center px-6 py-10 sm:py-16 relative overflow-hidden">
       <!-- Ambient Glow di Belakang Form -->
-      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[380px] h-[380px] pointer-events-none bg-primary/5 dark:bg-primary/10 blur-[90px] rounded-full" />
+      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-95 h-95 pointer-events-none bg-primary/5 dark:bg-primary/10 blur-[90px] rounded-full" />
 
       <!-- Form Container Card -->
       <div class="w-full max-w-sm relative z-10 animate-fade-in-up">
