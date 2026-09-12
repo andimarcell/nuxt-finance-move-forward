@@ -191,8 +191,8 @@ onBeforeUnmount(() => {
     <!-- HERO SECTION -->
     <section class="relative pt-32 sm:pt-40 pb-20 sm:pb-24 px-4 sm:px-6 text-center overflow-hidden">
       <!-- Ambient Glow (Animasi Pulse) -->
-      <div class="absolute top-10 left-1/2 -translate-x-1/2 w-[600px] sm:w-[900px] h-[380px] pointer-events-none bg-primary/15 blur-[120px] rounded-full animate-pulse-slow" />
-      <div class="absolute top-40 left-1/4 w-[300px] h-[300px] pointer-events-none bg-emerald-500/10 blur-[100px] rounded-full" />
+      <div class="absolute top-10 left-1/2 -translate-x-1/2 w-150 sm:w-225 h-75 pointer-events-none bg-primary/15 blur-[120px] rounded-full animate-pulse-slow" />
+      <div class="absolute top-40 left-1/4 w-75 h-75 pointer-events-none bg-emerald-500/10 blur-[100px] rounded-full" />
 
       <div class="relative max-w-4xl mx-auto">
         <!-- Badge Status -->
@@ -214,7 +214,7 @@ onBeforeUnmount(() => {
           style="font-family: 'DM Sans', sans-serif; transition-delay: 100ms;"
         >
           Kelola Arus Kas & <br class="hidden md:block" />
-          <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary via-emerald-500 to-teal-400">
+          <span class="text-transparent bg-clip-text bg-linear-to-r from-primary via-emerald-500 to-teal-400">
             Akuntabilitas Keuangan.
           </span>
         </h1>
@@ -385,7 +385,7 @@ onBeforeUnmount(() => {
               </p>
             </div>
             <div class="flex items-center gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
-              <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 text-primary flex items-center justify-center text-xs font-bold ring-2 ring-primary/20">
+              <div class="w-10 h-10 rounded-full bg-linear-to-br from-primary/20 to-primary/40 text-primary flex items-center justify-center text-xs font-bold ring-2 ring-primary/20">
                 {{ t.avatar }}
               </div>
               <div>
@@ -402,7 +402,7 @@ onBeforeUnmount(() => {
     <section class="py-24 sm:py-28 px-4 sm:px-6">
       <div
         data-reveal="scale"
-        class="max-w-4xl mx-auto rounded-3xl p-8 sm:p-14 text-center relative overflow-hidden bg-gradient-to-br from-primary via-emerald-600 to-teal-700 text-white shadow-2xl hover:shadow-primary/30 transition-all duration-500"
+        class="max-w-4xl mx-auto rounded-3xl p-8 sm:p-14 text-center relative overflow-hidden bg-linear-to-br from-primary via-emerald-600 to-teal-700 text-white shadow-2xl hover:shadow-primary/30 transition-all duration-500"
       >
         <div class="absolute -top-10 -right-10 w-72 h-72 rounded-full opacity-25 pointer-events-none bg-white blur-[80px]" />
         <div class="absolute -bottom-10 -left-10 w-72 h-72 rounded-full opacity-20 pointer-events-none bg-black blur-[70px]" />

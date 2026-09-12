@@ -194,12 +194,12 @@ const handleForgotPassword = async () => {
 
     <!-- PANEL KIRI: Branding & Testimoni (Desktop) -->
     <div
-      class="hidden lg:flex flex-col justify-between w-1/2 p-12 xl:p-16 relative overflow-hidden bg-gradient-to-br from-emerald-600 via-primary to-teal-700 text-white shadow-2xl"
+      class="hidden lg:flex flex-col justify-between w-1/2 p-12 xl:p-16 relative overflow-hidden bg-linear-to-br from-emerald-600 via-primary to-teal-700 text-white shadow-2xl"
     >
       <!-- Ambient Glow Shapes -->
       <div class="absolute -bottom-20 -left-20 w-96 h-96 rounded-full opacity-25 pointer-events-none bg-white blur-3xl animate-pulse-slow" />
       <div class="absolute -top-12 -right-12 w-80 h-80 rounded-full opacity-20 pointer-events-none bg-teal-200 blur-3xl" />
-      <div class="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:24px_24px] opacity-10 pointer-events-none" />
+      <div class="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [bg-size:24px_24px] opacity-10 pointer-events-none" />
 
       <!-- Top Header Panel Kiri -->
       <div class="relative z-10 flex items-center justify-between">
