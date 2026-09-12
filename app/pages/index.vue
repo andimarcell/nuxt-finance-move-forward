@@ -1,6 +1,6 @@
 <script setup>
 definePageMeta({
-  layout: false, // Menghilangkan layout default agar tidak bentrok dengan Navbar baru
+  layout: false,
 });
 
 useHead({
@@ -79,14 +79,14 @@ let observer = null;
 onMounted(() => {
   if (!import.meta.client) return;
 
-  // 1. Scroll listener untuk efek navbar transparan -> solid
+  // 1. Scroll listener untuk navbar effect
   const handleScroll = () => {
     isScrolled.value = window.scrollY > 20;
   };
   window.addEventListener("scroll", handleScroll, { passive: true });
   handleScroll();
 
-  // 2. Intersection Observer untuk animasi "Reveal" saat scroll
+  // 2. Intersection Observer untuk scroll reveal animations
   const revealElements = document.querySelectorAll("[data-reveal]");
 
   if ("IntersectionObserver" in window) {
@@ -95,7 +95,7 @@ onMounted(() => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             entry.target.classList.add("is-revealed");
-            observer.unobserve(entry.target); // Animasi hanya sekali
+            observer.unobserve(entry.target);
           }
         });
       },
@@ -107,6 +107,7 @@ onMounted(() => {
 
     revealElements.forEach((el) => observer.observe(el));
   } else {
+    // Fallback jika browser lawas
     revealElements.forEach((el) => el.classList.add("is-revealed"));
   }
 });
@@ -122,7 +123,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white overflow-x-hidden selection:bg-primary/20 selection:text-primary">
     
-    <!-- NAVBAR: Responsif & Dynamic -->
+    <!-- NAVBAR -->
     <header
       class="fixed top-0 inset-x-0 z-50 transition-all duration-300 backdrop-blur-md border-b"
       :class="[
@@ -144,7 +145,7 @@ onBeforeUnmount(() => {
           <span class="transition-colors group-hover:text-primary">F<span class="text-primary">Tracker</span></span>
         </NuxtLink>
         
-        <!-- Navigasi Desktop -->
+        <!-- Navigation Links (Desktop) -->
         <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600 dark:text-gray-300">
           <a
             href="#fitur"
@@ -166,7 +167,7 @@ onBeforeUnmount(() => {
           </a>
         </nav>
 
-        <!-- Tombol Aksi -->
+        <!-- Action Buttons -->
         <div class="flex items-center gap-2 sm:gap-3 shrink-0">
           <UButton
             v-if="!user"
@@ -178,7 +179,7 @@ onBeforeUnmount(() => {
             Masuk
           </UButton>
           <UButton
-            to="/dashboard"
+            :to="user ? '/dashboard' : '/login?mode=register'"
             color="primary"
             class="text-xs sm:text-sm px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-lg font-semibold shadow-sm hover:shadow-md hover:shadow-primary/25 active:scale-95 transition-all duration-200 whitespace-nowrap shrink-0 cursor-pointer"
           >
@@ -190,12 +191,12 @@ onBeforeUnmount(() => {
 
     <!-- HERO SECTION -->
     <section class="relative pt-32 sm:pt-40 pb-20 sm:pb-24 px-4 sm:px-6 text-center overflow-hidden">
-      <!-- Ambient Glow (Animasi Pulse) -->
-      <div class="absolute top-10 left-1/2 -translate-x-1/2 w-150 sm:w-225 h-75 pointer-events-none bg-primary/15 blur-[120px] rounded-full animate-pulse-slow" />
+      <!-- Ambient Glow (Animated pulse) -->
+      <div class="absolute top-10 left-1/2 -translate-x-1/2 w-150 sm:w-225 h-95 pointer-events-none bg-primary/15 blur-[120px] rounded-full animate-pulse-slow" />
       <div class="absolute top-40 left-1/4 w-75 h-75 pointer-events-none bg-emerald-500/10 blur-[100px] rounded-full" />
 
       <div class="relative max-w-4xl mx-auto">
-        <!-- Badge Status -->
+        <!-- Badge -->
         <div data-reveal class="inline-block">
           <UBadge
             color="primary"
@@ -207,7 +208,7 @@ onBeforeUnmount(() => {
           </UBadge>
         </div>
 
-        <!-- Headline Utama -->
+        <!-- Headline -->
         <h1
           data-reveal
           class="text-4xl sm:text-6xl md:text-7xl font-extrabold leading-tight sm:leading-tight md:leading-tight mb-6 tracking-tight text-balance"
@@ -219,7 +220,7 @@ onBeforeUnmount(() => {
           </span>
         </h1>
 
-        <!-- Sub-headline -->
+        <!-- Subheadline -->
         <p
           data-reveal
           class="text-base sm:text-lg md:text-xl max-w-2xl mx-auto mb-10 text-gray-600 dark:text-gray-300 leading-relaxed font-normal"
@@ -236,56 +237,81 @@ onBeforeUnmount(() => {
           style="transition-delay: 300ms;"
         >
           <UButton
-            to="/dashboard"
+            :to="user ? '/dashboard' : '/login?mode=register'"
             size="xl"
             color="primary"
             class="w-full sm:w-auto px-8 py-3.5 sm:py-4 rounded-full font-bold shadow-xl shadow-primary/25 hover:shadow-2xl hover:shadow-primary/40 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all duration-300 cursor-pointer justify-center group"
             icon="i-heroicons-sparkles"
           >
-            <span>Coba Dashboard</span>
+            <span>{{ user ? 'Buka Dashboard' : 'Mulai Sekarang — Gratis' }}</span>
             <UIcon name="i-heroicons-arrow-right" class="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1" />
           </UButton>
           <UButton
-            to="/login"
+            to="/dashboard"
             size="xl"
             variant="outline"
             color="neutral"
             class="w-full sm:w-auto px-8 py-3.5 sm:py-4 rounded-full font-semibold hover:bg-gray-100 dark:hover:bg-gray-800 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all duration-300 cursor-pointer justify-center"
+            icon="i-heroicons-chart-pie"
           >
-            Masuk Sekarang
+            Lihat Dashboard Demo
           </UButton>
         </div>
 
-        <!-- BROWSER MOCKUP (Elevated Reveal) -->
-        <div
-          data-reveal="scale"
-          class="mx-auto max-w-5xl rounded-2xl overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-800 group hover:shadow-primary/10 transition-all duration-700 hover:border-gray-300 dark:hover:border-gray-700"
-          style="transition-delay: 400ms;"
-        >
-          <div class="bg-gray-100 dark:bg-gray-900 px-4 py-3 border-b border-gray-200 dark:border-gray-800 flex items-center space-x-2">
-            <div class="w-3 h-3 rounded-full bg-red-400 shrink-0" />
-            <div class="w-3 h-3 rounded-full bg-yellow-400 shrink-0" />
-            <div class="w-3 h-3 rounded-full bg-green-400 shrink-0" />
-            <div class="flex-1 mx-4">
-              <div class="text-[11px] px-4 py-1 rounded-md max-w-xs mx-auto text-center bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 select-none font-mono">
-                ftracker.app/dashboard
+        <!-- BROWSER MOCKUP WITH FLOATING MOBILE FRAME -->
+        <div class="relative mx-auto max-w-5xl">
+          <!-- Desktop Laptop Container -->
+          <div
+            data-reveal="scale"
+            class="rounded-2xl overflow-hidden shadow-2xl border border-gray-200 dark:border-gray-800 group hover:shadow-primary/10 transition-all duration-700 hover:border-gray-300 dark:hover:border-gray-700"
+            style="transition-delay: 400ms;"
+          >
+            <div class="bg-gray-100 dark:bg-gray-900 px-4 py-3 border-b border-gray-200 dark:border-gray-800 flex items-center space-x-2">
+              <div class="w-3 h-3 rounded-full bg-red-400 shrink-0" />
+              <div class="w-3 h-3 rounded-full bg-yellow-400 shrink-0" />
+              <div class="w-3 h-3 rounded-full bg-green-400 shrink-0" />
+              <div class="flex-1 mx-4">
+                <div class="text-[11px] px-4 py-1 rounded-md max-w-xs mx-auto text-center bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 select-none font-mono">
+                  ftracker.app/dashboard
+                </div>
               </div>
             </div>
+            <div class="bg-white dark:bg-gray-950 overflow-hidden relative">
+              <img
+                src="/laptop-baru.png"
+                alt="Dashboard Desktop Preview"
+                class="w-full h-auto block transition-transform duration-700 group-hover:scale-[1.01]"
+                loading="lazy"
+              />
+            </div>
           </div>
-          <div class="bg-white dark:bg-gray-950 overflow-hidden relative">
-            <img
-              src="/laptop-baru.png"
-              alt="Dashboard Preview"
-              class="w-full h-auto block transition-transform duration-700 group-hover:scale-[1.01]"
-              loading="lazy"
-            />
+
+          <!-- Floating Mobile Phone Mockup Overlay -->
+          <div
+            data-reveal
+            class="hidden sm:block absolute -bottom-6 -right-4 md:-right-8 lg:-right-10 w-44 md:w-56 lg:w-64 rounded-3xl p-1.5 md:p-2 bg-gray-900/90 dark:bg-gray-950/90 shadow-2xl border-2 border-gray-700/60 backdrop-blur-md transition-all duration-500 hover:scale-105 hover:-translate-y-2 z-20"
+            style="transition-delay: 550ms;"
+          >
+            <!-- Speaker Notch -->
+            <div class="w-12 md:w-16 h-1 bg-gray-700 rounded-full mx-auto mb-1.5" />
+            <!-- Screen Frame -->
+            <div class="rounded-2xl overflow-hidden shadow-inner border border-gray-800 bg-gray-950">
+              <img
+                src="/mobile-baru.jpeg"
+                alt="FTracker Tampilan Mobile"
+                class="w-full h-auto block object-cover"
+                loading="lazy"
+              />
+            </div>
+            <!-- Bottom Home Indicator -->
+            <div class="w-16 md:w-20 h-1 bg-gray-600 rounded-full mx-auto mt-2" />
           </div>
         </div>
       </div>
     </section>
 
     <!-- STATS SECTION (Staggered Cards) -->
-    <section id="statistik" class="py-16 sm:py-20 px-4 sm:px-6 bg-gray-50/80 dark:bg-gray-900/40 border-y border-gray-100 dark:border-gray-800/60">
+    <section id="statistik" class="py-16 sm:py-20 px-4 sm:px-6 bg-gray-50/80 dark:bg-gray-900/40 border-y border-gray-100 dark:border-gray-800/80">
       <div class="max-w-5xl mx-auto">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8">
           <div
@@ -308,9 +334,10 @@ onBeforeUnmount(() => {
       </div>
     </section>
 
-    <!-- FEATURES SECTION (Staggerer Grid) -->
+    <!-- FEATURES SECTION (Staggered Grid) -->
     <section id="fitur" class="py-24 sm:py-28 px-4 sm:px-6">
       <div class="max-w-5xl mx-auto">
+        <!-- Section Header -->
         <div data-reveal class="text-center mb-16">
           <span class="text-xs font-semibold tracking-widest text-primary uppercase inline-block px-3 py-1 rounded-full bg-primary/10 mb-3">
             Fitur Unggulan
@@ -323,6 +350,7 @@ onBeforeUnmount(() => {
           </p>
         </div>
 
+        <!-- 3 Feature Cards -->
         <div class="grid md:grid-cols-3 gap-6 sm:gap-8">
           <div
             v-for="(f, index) in features"
@@ -349,9 +377,10 @@ onBeforeUnmount(() => {
       </div>
     </section>
 
-    <!-- TESTIMONIALS SECTION -->
+    <!-- TESTIMONIALS SECTION (Staggered Cards) -->
     <section id="testimoni" class="py-24 sm:py-28 px-4 sm:px-6 bg-gray-50/80 dark:bg-gray-900/40 border-y border-gray-100 dark:border-gray-800/80">
       <div class="max-w-5xl mx-auto">
+        <!-- Section Header -->
         <div data-reveal class="text-center mb-16">
           <span class="text-xs font-semibold tracking-widest text-primary uppercase inline-block px-3 py-1 rounded-full bg-primary/10 mb-3">
             Testimoni Nyata
@@ -364,6 +393,7 @@ onBeforeUnmount(() => {
           </p>
         </div>
 
+        <!-- 3 Testimonial Cards -->
         <div class="grid md:grid-cols-3 gap-6 sm:gap-8">
           <div
             v-for="(t, index) in testimonials"
@@ -398,12 +428,13 @@ onBeforeUnmount(() => {
       </div>
     </section>
 
-    <!-- FINAL CTA SECTION -->
+    <!-- FINAL CTA SECTION (Scale & Glow Reveal) -->
     <section class="py-24 sm:py-28 px-4 sm:px-6">
       <div
         data-reveal="scale"
         class="max-w-4xl mx-auto rounded-3xl p-8 sm:p-14 text-center relative overflow-hidden bg-linear-to-br from-primary via-emerald-600 to-teal-700 text-white shadow-2xl hover:shadow-primary/30 transition-all duration-500"
       >
+        <!-- Ambient Decorative Circles -->
         <div class="absolute -top-10 -right-10 w-72 h-72 rounded-full opacity-25 pointer-events-none bg-white blur-[80px]" />
         <div class="absolute -bottom-10 -left-10 w-72 h-72 rounded-full opacity-20 pointer-events-none bg-black blur-[70px]" />
         
@@ -419,11 +450,11 @@ onBeforeUnmount(() => {
           </p>
           <div class="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
             <UButton
-              to="/login"
+              :to="user ? '/dashboard' : '/login?mode=register'"
               size="xl"
-              class="w-full sm:w-auto px-10 py-4 rounded-full font-bold bg-white text-primary hover:bg-gray-100 hover:scale-105 active:scale-95 transition-all duration-200 shadow-xl cursor-pointer justify-center"
+              class="w-full sm:w-auto px-10 py-4 rounded-full font-bold bg-white text-primary hover:bg-gray-50 hover:scale-105 active:scale-95 transition-all duration-200 shadow-xl cursor-pointer justify-center"
             >
-              Daftar Sekarang — Gratis
+              {{ user ? 'Buka Dashboard' : 'Daftar Sekarang — Gratis' }}
             </UButton>
             <UButton
               to="/dashboard"
@@ -457,7 +488,7 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-/* Scroll Reveal Core Animations */
+/* Scroll Reveal Core Classes */
 [data-reveal] {
   opacity: 0;
   transform: translateY(28px);
@@ -482,7 +513,7 @@ onBeforeUnmount(() => {
   transform: translateY(0) scale(1);
 }
 
-/* Ambient Glow Pulse Effect */
+/* Subtle Glowing Background Pulse */
 @keyframes pulseSlow {
   0%, 100% {
     opacity: 0.6;

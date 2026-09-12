@@ -22,13 +22,23 @@ useHead({
   ],
 });
 
+const route = useRoute();
 const success = ref(false);
 const email = ref("");
 const password = ref("");
 const showPassword = ref(false);
-const authMode = ref("login"); // 'login' | 'register' | 'magic-link'
+const authMode = ref(route.query.mode === "register" ? "register" : "login"); // 'login' | 'register' | 'magic-link'
 const isLoading = ref(false);
 const isResetting = ref(false);
+
+watch(
+  () => route.query.mode,
+  (newMode) => {
+    if (newMode === "register" || newMode === "login" || newMode === "magic-link") {
+      authMode.value = newMode;
+    }
+  }
+);
 
 const supabase = useSupabaseClient();
 const toast = useToast();
@@ -176,7 +186,7 @@ const handleForgotPassword = async () => {
 <template>
   <div class="min-h-screen flex flex-col lg:flex-row bg-white dark:bg-gray-950 text-gray-900 dark:text-white selection:bg-primary/20 selection:text-primary">
     
-    <!-- TOP BAR KHUSUS MOBILE / TABLET -->
+    <!-- TOP BAR KHUSUS MOBILE / TABLET (Mencegah logo hilang & memberikan tombol kembali) -->
     <div class="lg:hidden flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800/80 bg-white/90 dark:bg-gray-950/90 backdrop-blur-md sticky top-0 z-30">
       <NuxtLink
         to="/"
@@ -208,7 +218,7 @@ const handleForgotPassword = async () => {
           class="flex items-center gap-2.5 text-2xl font-extrabold text-white tracking-tight group select-none"
           style="font-family: 'DM Sans', sans-serif"
         >
-          <div class="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center p-1.5 transition-transform duration-300 group-hover:scale-105">
+          <div class="w-9 h-9 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center p-1.5 transition-transform group-hover:scale-105">
             <img src="/favicon.ico" alt="FTracker" class="w-full h-full object-contain brightness-0 invert" />
           </div>
           <span>F<span class="opacity-90">Tracker</span></span>
@@ -340,6 +350,15 @@ const handleForgotPassword = async () => {
                   <label class="text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                     Password
                   </label>
+                  <button
+                    v-if="authMode === 'login'"
+                    type="button"
+                    @click="handleForgotPassword"
+                    class="text-xs font-semibold text-primary hover:underline cursor-pointer transition-colors"
+                    :disabled="isResetting"
+                  >
+                    {{ isResetting ? 'Mengirim...' : 'Lupa Password?' }}
+                  </button>
                 </div>
                 <UInput
                   v-model="password"
@@ -384,15 +403,6 @@ const handleForgotPassword = async () => {
                 }}
               </span>
             </UButton>
-            <button
-                    v-if="authMode === 'login'"
-                    type="button"
-                    @click="handleForgotPassword"
-                    class="text-xs font-semibold text-primary hover:underline cursor-pointer transition-colors"
-                    :disabled="isResetting"
-                  >
-                    {{ isResetting ? 'Mengirim...' : 'Lupa Password?' }}
-                  </button>
           </form>
 
           <!-- Divider & Mode Switches -->
@@ -464,6 +474,7 @@ const handleForgotPassword = async () => {
             </p>
           </div>
         </div>
+
       </div>
     </div>
   </div>
