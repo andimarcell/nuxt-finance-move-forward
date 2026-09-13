@@ -10,6 +10,7 @@ import {
 } from "date-fns";
 import { id } from "date-fns/locale";
 import { transactionViewsItems } from "~/utils/constants";
+import { resetDemoTransactions } from "~/utils/demoData";
 
 definePageMeta({
   layout: false, // Membangun full-screen dashboard workspace dengan Sidebar dan Top Bar ala Figma
@@ -40,6 +41,7 @@ const user = useSupabaseUser();
 const supabase = useSupabaseClient();
 const colorMode = useColorMode();
 const route = useRoute();
+const toast = useToast();
 
 // Deteksi Mode Demo
 const isDemo = computed(() => {
@@ -137,6 +139,18 @@ const {
 
 const refreshAll = async () => {
   await Promise.all([refreshTransactions(), refreshPreviousTransactions()]);
+};
+
+// Reset data simulasi demo ke kondisi awal
+const onResetDemo = async () => {
+  resetDemoTransactions();
+  await refreshAll();
+  toast.add({
+    title: "Data Demo Direset",
+    description: "Seluruh data transaksi demo telah dikembalikan ke kondisi awal bawaan.",
+    color: "info",
+    icon: "i-heroicons-arrow-path",
+  });
 };
 
 // Navigasi Periode
@@ -558,25 +572,37 @@ const scrollToSection = (id) => {
     <!-- ======================================================== -->
     <div class="flex-1 flex flex-col min-w-0 lg:pl-64">
       
-      <!-- DEMO MODE FLOATING BANNER -->
+      <!-- DEMO MODE FLOATING BANNER (Upselling + LocalStorage Persistence Control) -->
       <div
         v-if="isDemo"
         class="bg-amber-500/10 dark:bg-amber-500/15 border-b border-amber-500/20 px-4 sm:px-8 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs text-amber-900 dark:text-amber-200"
       >
         <div class="flex items-center gap-2 font-medium">
-          <UIcon name="i-heroicons-information-circle" class="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+          <UIcon name="i-heroicons-sparkles" class="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
           <span>
-            <strong>Mode Demonstrasi:</strong> Anda sedang menjelajahi simulasi data kas. Perubahan bersifat sementara.
+            <strong>Mode Demo Interaktif:</strong> Suka fitur & kemudahan ini? Daftar sekarang untuk menyimpan data kas riil Anda secara aman di cloud!
           </span>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 shrink-0">
+          <UButton
+            icon="i-heroicons-arrow-path"
+            size="xs"
+            variant="ghost"
+            color="neutral"
+            class="rounded-lg text-[11px] font-medium px-2.5 py-1 cursor-pointer hover:bg-amber-500/20 text-amber-900 dark:text-amber-200"
+            title="Kembalikan data demo ke setelan awal"
+            @click="onResetDemo"
+          >
+            Reset Data Demo
+          </UButton>
           <UButton
             to="/login?mode=register"
             size="xs"
             color="primary"
-            class="rounded-lg font-bold px-3 py-1 cursor-pointer"
+            class="rounded-lg font-bold px-3 py-1 cursor-pointer shadow-sm hover:scale-105 active:scale-95 transition-all"
+            icon="i-heroicons-user-plus"
           >
-            Daftar Akun Gratis
+            Daftar Sekarang — Gratis
           </UButton>
           <UButton
             to="/"
@@ -610,7 +636,7 @@ const scrollToSection = (id) => {
                 class="text-base sm:text-xl font-extrabold text-gray-900 dark:text-white truncate"
                 style="font-family: 'DM Sans', sans-serif"
               >
-                {{ greeting }}, {{ userDisplayName }} 
+                {{ greeting }}, {{ userDisplayName }} 👋
               </h1>
               <UBadge
                 v-if="isDemo"

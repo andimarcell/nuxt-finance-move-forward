@@ -125,11 +125,40 @@ export const getDemoTransactions = () => {
 };
 
 let sharedDemoStore = null;
+const STORAGE_KEY = "ftracker_demo_transactions_v1";
+
+const saveToLocalStorage = (data) => {
+  if (typeof window !== "undefined" && window.localStorage) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (e) {
+      console.warn("Gagal menyimpan data demo ke localStorage:", e);
+    }
+  }
+};
 
 export const getSharedDemoStore = () => {
-  if (!sharedDemoStore) {
-    sharedDemoStore = getDemoTransactions();
+  if (sharedDemoStore) {
+    return sharedDemoStore;
   }
+
+  if (typeof window !== "undefined" && window.localStorage) {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          sharedDemoStore = parsed;
+          return sharedDemoStore;
+        }
+      }
+    } catch (e) {
+      console.warn("Gagal membaca data demo dari localStorage:", e);
+    }
+  }
+
+  sharedDemoStore = getDemoTransactions();
+  saveToLocalStorage(sharedDemoStore);
   return sharedDemoStore;
 };
 
@@ -141,6 +170,7 @@ export const addDemoTransaction = (transaction) => {
     created_at: transaction.created_at || new Date().toISOString(),
   };
   store.unshift(newTx);
+  saveToLocalStorage(store);
   return newTx;
 };
 
@@ -152,6 +182,7 @@ export const updateDemoTransaction = (id, payload) => {
       ...store[index],
       ...payload,
     };
+    saveToLocalStorage(store);
     return store[index];
   }
   return null;
@@ -162,8 +193,15 @@ export const deleteDemoTransaction = (id) => {
   const index = store.findIndex((t) => t.id === id);
   if (index !== -1) {
     store.splice(index, 1);
+    saveToLocalStorage(store);
     return true;
   }
   return false;
+};
+
+export const resetDemoTransactions = () => {
+  sharedDemoStore = getDemoTransactions();
+  saveToLocalStorage(sharedDemoStore);
+  return sharedDemoStore;
 };
 
