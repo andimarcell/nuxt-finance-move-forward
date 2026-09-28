@@ -4,6 +4,43 @@ import autoTable from "jspdf-autotable";
 
 export const useExportReport = () => {
   const toast = useToast();
+  const isExporting = ref(false);
+  const exportStatus = ref("");
+
+  const withExportFeedback = async (label, task) => {
+    if (isExporting.value) return;
+    isExporting.value = true;
+    exportStatus.value = label;
+    // Beri kesempatan UI melukis state loading sebelum kerja berat dimulai
+    await nextTick();
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    try {
+      await task();
+    } catch (e) {
+      toast.add({
+        title: "Gagal mengekspor",
+        description: e?.message || "Terjadi kesalahan saat menyusun laporan.",
+        color: "error",
+        icon: "i-heroicons-x-circle",
+      });
+    } finally {
+      isExporting.value = false;
+      exportStatus.value = "";
+    }
+  };
+
+  const guardEmpty = (transactions) => {
+    if (!transactions || transactions.length === 0) {
+      toast.add({
+        title: "Tidak ada data",
+        description: "Tidak ada transaksi pada filter periode ini untuk diekspor.",
+        color: "warning",
+        icon: "i-heroicons-exclamation-triangle",
+      });
+      return true;
+    }
+    return false;
+  };
 
   const formatRupiah = (val) => {
     return new Intl.NumberFormat("id-ID", {
@@ -121,9 +158,9 @@ export const useExportReport = () => {
   };
 
   // 📊 1. EXCEL DETAIL TRANSAKSI
-  const exportToExcel = (transactions, periodLabel, totals) => {
-    try {
-      if (!transactions || transactions.length === 0) return;
+  const exportToExcel = (transactions, periodLabel, totals) =>
+    withExportFeedback("Menyusun Excel detail...", () => {
+      if (guardEmpty(transactions)) return;
       const summaryData = [
         ["FTRACKER - LAPORAN KEUANGAN RESMI"],
         [`PERIODE: ${periodLabel?.toUpperCase() || "-"}`],
@@ -213,15 +250,12 @@ export const useExportReport = () => {
         description: "Excel Detail diunduh.",
         color: "success",
       });
-    } catch (e) {
-      toast.add({ title: "Gagal", description: e.message, color: "error" });
-    }
-  };
+    });
 
   // 📄 2. PDF DETAIL TRANSAKSI
-  const exportToPDF = (transactions, periodLabel, totals) => {
-    try {
-      if (!transactions || transactions.length === 0) return;
+  const exportToPDF = (transactions, periodLabel, totals) =>
+    withExportFeedback("Menyusun PDF detail...", () => {
+      if (guardEmpty(transactions)) return;
       const doc = new jsPDF();
       doc
         .setFont("helvetica", "bold")
@@ -284,19 +318,16 @@ export const useExportReport = () => {
         description: "PDF Detail diunduh.",
         color: "success",
       });
-    } catch (e) {
-      toast.add({ title: "Gagal", description: e.message, color: "error" });
-    }
-  };
+    });
 
   //  EXCEL REKAPITULASI MATRIKS (Menerima parameter includeExcluded)
   const exportToMatrixExcel = (
     transactions,
     periodLabel,
     includeExcluded = false,
-  ) => {
-    try {
-      if (!transactions || transactions.length === 0) return;
+  ) =>
+    withExportFeedback("Menyusun Excel matriks...", () => {
+      if (guardEmpty(transactions)) return;
       const { sortedMonthKeys, monthHeaders, rowsMap } = buildMatrixData(
         transactions,
         includeExcluded,
@@ -411,19 +442,16 @@ export const useExportReport = () => {
         description: "Excel Matriks Nama Kegabung berhasil diunduh.",
         color: "success",
       });
-    } catch (e) {
-      toast.add({ title: "Gagal", description: e.message, color: "error" });
-    }
-  };
+    });
 
   // PDF REKAPITULASI MATRIKS (Menerima parameter includeExcluded)
   const exportToMatrixPDF = (
     transactions,
     periodLabel,
     includeExcluded = false,
-  ) => {
-    try {
-      if (!transactions || transactions.length === 0) return;
+  ) =>
+    withExportFeedback("Menyusun PDF matriks...", () => {
+      if (guardEmpty(transactions)) return;
       const { sortedMonthKeys, monthHeaders, rowsMap } = buildMatrixData(
         transactions,
         includeExcluded,
@@ -497,12 +525,11 @@ export const useExportReport = () => {
         description: "PDF Matriks Nama Kegabung berhasil diunduh.",
         color: "success",
       });
-    } catch (e) {
-      toast.add({ title: "Gagal", description: e.message, color: "error" });
-    }
-  };
+    });
 
   return {
+    isExporting,
+    exportStatus,
     exportToExcel,
     exportToPDF,
     exportToMatrixExcel,

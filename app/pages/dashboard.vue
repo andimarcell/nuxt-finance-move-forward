@@ -295,8 +295,14 @@ const categoryFilterItems = computed(() => {
 });
 
 // Panggil Composable Ekspor Laporan
-const { exportToExcel, exportToPDF, exportToMatrixExcel, exportToMatrixPDF } =
-  useExportReport();
+const {
+  isExporting,
+  exportStatus,
+  exportToExcel,
+  exportToPDF,
+  exportToMatrixExcel,
+  exportToMatrixPDF,
+} = useExportReport();
 
 // DROPDOWN EKSPOR: Admin dapat data FULL LENGKAP, Member dapat data BERSIH
 const exportMenuItems = computed(() => [
@@ -434,13 +440,15 @@ const exportMenuItems = computed(() => [
       <div
         class="w-full sm:w-auto mt-4 sm:mt-0 flex items-center justify-center sm:justify-end gap-2"
       >
-        <UDropdownMenu :items="exportMenuItems">
+        <UDropdownMenu :items="exportMenuItems" :disabled="isExporting">
           <UButton
             icon="i-heroicons-arrow-down-tray"
             color="neutral"
             variant="outline"
-            class="cursor-pointer sm:w-auto justify-center"
-            label="Unduh Laporan"
+            class="cursor-pointer sm:w-auto justify-center disabled:opacity-70"
+            :label="isExporting ? exportStatus || 'Menyusun laporan...' : 'Unduh Laporan'"
+            :loading="isExporting"
+            :disabled="isExporting"
           />
         </UDropdownMenu>
         <!-- 🔒 KHUSUS ADMIN (Sembunyi di Mode Member) -->
