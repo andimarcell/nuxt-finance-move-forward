@@ -118,12 +118,14 @@ const cashColor = computed(() => {
 
 const activeChartType = ref("all");
 const selectedCategory = ref("all");
+const searchQuery = ref("");
 const sortBy = ref("date_desc");
 const activeCategory = ref(null);
 
 watch(activeChartType, () => {
   activeCategory.value = null;
   selectedCategory.value = "all";
+  searchQuery.value = "";
 });
 
 const getCategoryValue = (cat) => {
@@ -177,7 +179,17 @@ const filteredTransactionsList = computed(() => {
     return true;
   });
 
-  // C. Pengurutan Data
+  // C. Filter Pencarian Deskripsi / Kategori (Instant Search)
+  if (searchQuery.value?.trim()) {
+    const q = searchQuery.value.toLowerCase().trim();
+    filtered = filtered.filter((t) => {
+      const desc = t.description?.toLowerCase() || "";
+      const cat = t.category?.toLowerCase() || "";
+      return desc.includes(q) || cat.includes(q);
+    });
+  }
+
+  // D. Pengurutan Data
   filtered.sort((a, b) => {
     const dateA = new Date(a.created_at).getTime();
     const dateB = new Date(b.created_at).getTime();
@@ -468,9 +480,31 @@ const exportMenuItems = computed(() => [
 
     <section
       v-if="!isMemberMode"
-      class="flex justify-center sm:justify-end mb-6 ml-1 sm:ml-0 gap-2"
+      class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6 ml-1 sm:ml-0"
     >
-      <div class="w-full max-w-42 sm:w-64">
+      <div class="w-full">
+        <UFormField label="Cari Transaksi">
+          <UInput
+            v-model="searchQuery"
+            icon="i-heroicons-magnifying-glass"
+            placeholder="Ketik keterangan atau kategori..."
+            class="w-full"
+          >
+            <template #trailing>
+              <button
+                v-if="searchQuery"
+                type="button"
+                @click="searchQuery = ''"
+                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
+              >
+                <UIcon name="i-heroicons-x-mark" class="w-4 h-4" />
+              </button>
+            </template>
+          </UInput>
+        </UFormField>
+      </div>
+
+      <div class="w-full">
         <UFormField label="Saring Kategori">
           <USelectMenu
             v-model="selectedCategory"
@@ -497,7 +531,8 @@ const exportMenuItems = computed(() => [
           </USelectMenu>
         </UFormField>
       </div>
-      <div class="w-full max-w-42 sm:w-64">
+
+      <div class="w-full">
         <UFormField label="Urutkan Berdasarkan">
           <USelect
             v-model="sortBy"

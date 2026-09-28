@@ -111,7 +111,7 @@ const categoryLabel = computed(() => {
 <template>
   <div
     v-if="props.transaction"
-    class="border-b border-gray-100 dark:border-gray-800 py-3.5 mt-1 flex sm:grid sm:grid-cols-2 items-center justify-between sm:justify-stretch gap-4"
+    class="border-b border-gray-100 dark:border-gray-800/80 py-3.5 px-3 rounded-xl hover:bg-gray-50/70 dark:hover:bg-gray-800/40 transition-colors duration-150 flex sm:grid sm:grid-cols-2 items-center justify-between sm:justify-stretch gap-4"
   >
     <!-- ======================================================== -->
     <!-- SISI KIRI (Kolom 1 di Desktop [50%], Flex-Row di Mobile) -->
@@ -119,11 +119,16 @@ const categoryLabel = computed(() => {
     <div
       class="flex items-start sm:items-center justify-between min-w-0 flex-1 sm:flex-none"
     >
-      <div class="flex items-start sm:items-center space-x-3 min-w-0 flex-1">
-        <UIcon
-          :name="icon"
-          :class="[iconColor, 'shrink-0 mt-0.5 sm:mt-0 w-5 h-5']"
-        />
+      <div class="flex items-start sm:items-center space-x-3.5 min-w-0 flex-1">
+        <div
+          class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5 sm:mt-0 transition-transform hover:scale-105"
+          :class="isIncome ? 'bg-green-500/10 text-green-600 dark:text-green-400' : 'bg-red-500/10 text-red-600 dark:text-red-400'"
+        >
+          <UIcon
+            :name="icon"
+            class="w-5 h-5"
+          />
+        </div>
 
         <div class="flex flex-col min-w-0">
           <UTooltip
@@ -147,39 +152,39 @@ const categoryLabel = computed(() => {
             ></div>
           </div>
 
-          <div class="mt-1 block sm:hidden">
+          <div class="mt-1.5 flex items-center gap-1.5 sm:hidden flex-wrap">
             <UBadge
               color="neutral"
-              variant="outline"
-              class="text-[9px] px-1.5 py-0.5 font-medium rounded-md capitalize"
+              variant="subtle"
+              class="text-[10px] px-1.5 py-0.5 font-medium rounded capitalize"
             >
               {{ categoryLabel }}
             </UBadge>
             <UBadge
-              color="neutral"
-              variant="outline"
-              class="text-[9px] px-1.5 py-0.5 font-medium rounded-md"
+              :color="isIncome ? 'success' : 'error'"
+              variant="subtle"
+              class="text-[10px] px-1.5 py-0.5 font-medium rounded"
             >
-              {{ transaction.type === "income" ? "Pemasukan" : "Pengeluaran" }}
+              {{ isIncome ? "Pemasukan" : "Pengeluaran" }}
             </UBadge>
           </div>
         </div>
       </div>
 
-      <div class="hidden sm:block shrink-0 ml-4">
+      <div class="hidden sm:flex items-center gap-1.5 shrink-0 ml-4">
         <UBadge
           color="neutral"
-          variant="outline"
-          class="text-[10px] sm:text-xs px-2 py-0.5 font-medium rounded-md capitalize"
+          variant="subtle"
+          class="text-xs px-2 py-0.5 font-medium rounded-md capitalize"
         >
           {{ categoryLabel }}
         </UBadge>
         <UBadge
-          color="neutral"
-          variant="outline"
-          class="text-[10px] sm:text-xs px-2 py-0.5 font-medium rounded-md"
+          :color="isIncome ? 'success' : 'error'"
+          variant="subtle"
+          class="text-xs px-2 py-0.5 font-medium rounded-md"
         >
-          {{ transaction.type === "income" ? "Pemasukan" : "Pengeluaran" }}
+          {{ isIncome ? "Pemasukan" : "Pengeluaran" }}
         </UBadge>
       </div>
     </div>
