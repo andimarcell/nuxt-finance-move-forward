@@ -474,13 +474,35 @@ async function onSubmit(event) {
           </UFormField>
 
           <UFormField label="Jenis Transaksi" name="type">
-            <USelect
-              v-model="state.type"
-              :items="transactionTypes"
-              option-attribute="label"
-              value-attribute="value"
-              class="w-full cursor-pointer"
-            />
+            <div class="grid grid-cols-2 gap-2 mt-1">
+              <button
+                type="button"
+                @click="state.type = 'income'"
+                class="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border text-sm font-semibold transition-all cursor-pointer"
+                :class="
+                  state.type === 'income'
+                    ? 'border-green-500 bg-green-500/10 text-green-600 dark:text-green-400 ring-2 ring-green-500/30'
+                    : 'border-gray-200 dark:border-gray-800 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                "
+              >
+                <UIcon name="i-heroicons-arrow-down-left" class="w-4 h-4" />
+                <span>Pemasukan</span>
+              </button>
+
+              <button
+                type="button"
+                @click="state.type = 'expense'"
+                class="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border text-sm font-semibold transition-all cursor-pointer"
+                :class="
+                  state.type === 'expense'
+                    ? 'border-red-500 bg-red-500/10 text-red-600 dark:text-red-400 ring-2 ring-red-500/30'
+                    : 'border-gray-200 dark:border-gray-800 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                "
+              >
+                <UIcon name="i-heroicons-arrow-up-right" class="w-4 h-4" />
+                <span>Pengeluaran</span>
+              </button>
+            </div>
           </UFormField>
 
           <UFormField label="Tanggal" name="created_at">

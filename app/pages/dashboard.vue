@@ -377,7 +377,7 @@ const exportMenuItems = computed(() => [
     </section>
 
     <section
-      class="grid text-sm grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 sm:gap-16 mb-10 gap-8 ml-1 sm:ml-0"
+      class="grid text-sm grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-10"
     >
       <Trend
         title="Pemasukan"
@@ -542,17 +542,60 @@ const exportMenuItems = computed(() => [
           </TransitionGroup>
         </div>
 
+        <!-- Modern Empty State -->
         <div
           v-if="transactions.length === 0 && !isLoading"
-          class="text-center py-10 text-gray-500"
+          class="flex flex-col items-center justify-center py-16 px-4 text-center border border-dashed border-gray-200 dark:border-gray-800 rounded-2xl bg-gray-50/50 dark:bg-gray-900/40 my-4"
         >
-          Tidak ada transaksi pada periode ini.
+          <div class="w-14 h-14 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-3">
+            <UIcon name="i-heroicons-document-text" class="w-7 h-7" />
+          </div>
+          <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-1">
+            Belum Ada Transaksi
+          </h3>
+          <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-sm mb-4">
+            Tidak ada riwayat pemasukan atau pengeluaran pada periode ini.
+          </p>
+          <UButton
+            v-if="!isMemberMode"
+            label="Catat Transaksi Sekarang"
+            icon="i-heroicons-plus-circle"
+            color="primary"
+            variant="solid"
+            class="cursor-pointer font-semibold shadow-sm"
+            @click="onAddClick"
+          />
         </div>
       </div>
     </section>
 
-    <section v-if="!isMemberMode && isLoading && transactions.length === 0">
-      <USkeleton v-for="i in 3" :key="i" class="h-8 w-full rounded-md mb-2" />
+    <!-- Skeleton Loading State yang Halus & Proporsional -->
+    <section v-if="isLoading && transactions.length === 0" class="space-y-4 my-6">
+      <div v-for="i in 3" :key="i" class="p-4 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-white dark:bg-gray-900/50 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <USkeleton class="w-10 h-10 rounded-full" />
+          <div class="space-y-2">
+            <USkeleton class="h-4 w-32" />
+            <USkeleton class="h-3 w-20" />
+          </div>
+        </div>
+        <USkeleton class="h-5 w-24" />
+      </div>
     </section>
+
+    <!-- Floating Action Button khusus Mobile di Halaman Dashboard -->
+    <div
+      v-if="!isMemberMode"
+      class="fixed bottom-6 right-6 sm:hidden z-40"
+    >
+      <button
+        type="button"
+        @click="onAddClick"
+        class="w-14 h-14 rounded-full bg-primary text-white shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition cursor-pointer ring-4 ring-primary/20"
+        aria-label="Tambah Transaksi"
+      >
+        <UIcon name="i-heroicons-plus" class="w-7 h-7" />
+      </button>
+    </div>
   </div>
 </template>

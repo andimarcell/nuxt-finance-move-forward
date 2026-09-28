@@ -1,0 +1,8 @@
+const Trend_vue_vue_type_style_index_0_scoped_d7457e97_lang = ".green[data-v-d7457e97]{color:var(--color-green-600,oklch(62.7% .194 149.214))}@media(prefers-color-scheme:dark){.green[data-v-d7457e97]{color:var(--color-green-400,oklch(79.2% .209 151.711))}}.red[data-v-d7457e97]{color:var(--color-red-600,oklch(57.7% .245 27.325))}@media(prefers-color-scheme:dark){.red[data-v-d7457e97]{color:var(--color-red-400,oklch(70.4% .191 22.216))}}";
+
+const TrendStyles_BRUXg63e = [
+  Trend_vue_vue_type_style_index_0_scoped_d7457e97_lang
+];
+
+export { TrendStyles_BRUXg63e as default };
+//# sourceMappingURL=Trend-styles.BRUXg63e.mjs.map

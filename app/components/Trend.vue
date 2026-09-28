@@ -92,14 +92,23 @@ const { currency } = useCurrency(animatedValue);
 </script>
 
 <template>
-  <div>
-    <div class="font-bold text-sm sm:text-base" :class="trendColor">
-      {{ title }}
+  <div
+    class="p-5 bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm hover:shadow-md hover:border-gray-200 dark:hover:border-gray-700 transition-all duration-200 flex flex-col justify-between"
+  >
+    <div class="flex items-center justify-between mb-3">
+      <span class="font-bold text-sm tracking-wide" :class="trendColor">
+        {{ title }}
+      </span>
+      <div
+        class="w-7 h-7 rounded-lg flex items-center justify-center"
+        :class="trendingUp ? 'bg-green-500/10 text-green-600 dark:text-green-400' : 'bg-red-500/10 text-red-600 dark:text-red-400'"
+      >
+        <UIcon :name="icon" class="w-4 h-4" />
+      </div>
     </div>
-    <div
-      class="text-xl sm:text-2xl font-extrabold text-black dark:text-white mb-2"
-    >
-      <USkeleton class="h-8 w-full" v-if="loading" />
+
+    <div class="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white mb-3">
+      <USkeleton class="h-8 w-3/4 rounded-md" v-if="loading" />
 
       <!-- ClientOnly buat ngehindarin error merah (Hydration mismatch) -->
       <ClientOnly v-else>
@@ -115,21 +124,27 @@ const { currency } = useCurrency(animatedValue);
 
         <!-- Tulisan Loading sementara (optional) -->
         <template #fallback>
-          <USkeleton class="h-8 w-3/4" />
+          <USkeleton class="h-8 w-3/4 rounded-md" />
         </template>
       </ClientOnly>
     </div>
-    <div>
-      <USkeleton class="h-6 w-full" v-if="loading" />
-      <div v-else class="flex items-center space-x-1 text-sm">
-        <UIcon :name="icon" class="h-6 w-6" :class="trendColor" />
-        <span class="text-gray-500 dark:text-gray-400">
-          {{ percentageTrend }} dari periode lalu
-          
-          <!-- PENAMBAHAN STATUS TEKS DARI DOSEN (BAIK/BURUK) -->
-          <span v-if="trendStatusText" class="font-bold ml-1" :class="statusTextColor">
-            {{ trendStatusText }}
-          </span>
+
+    <div class="pt-2 border-t border-gray-50 dark:border-gray-800/60">
+      <USkeleton class="h-5 w-full rounded-md" v-if="loading" />
+      <div v-else class="flex items-center flex-wrap gap-1 text-xs">
+        <span
+          class="inline-flex items-center font-bold px-1.5 py-0.5 rounded"
+          :class="trendingUp ? 'bg-green-50 text-green-700 dark:bg-green-950/40 dark:text-green-400' : 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400'"
+        >
+          {{ percentageTrend }}
+        </span>
+        <span class="text-gray-500 dark:text-gray-400 text-[11px] sm:text-xs">
+          vs lalu
+        </span>
+        
+        <!-- PENAMBAHAN STATUS TEKS DARI DOSEN (BAIK/BURUK) -->
+        <span v-if="trendStatusText" class="font-bold text-[11px] sm:text-xs ml-auto" :class="statusTextColor">
+          {{ trendStatusText }}
         </span>
       </div>
     </div>

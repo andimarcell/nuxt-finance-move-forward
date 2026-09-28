@@ -89,56 +89,73 @@ const logout = async () => {
   <header class="flex items-center justify-between mt-10">
     <!-- klik logo/nama otomatis mengarah ke halaman ("/") -->
     <NuxtLink to="/" class="flex items-center gap-1.5 sm:gap-2 hover:opacity-80 transition shrink-0">
-      <img src="/favicon.ico" class="w-8 h-8 sm:w-10 sm:h-10 rounded-md" /><span class="text-3xl font-extrabold">FTracker</span></NuxtLink>
-    <ClientOnly>
-      <div v-if="user" class="flex items-center gap-2 sm:gap-4">
-        <!-- tombol dinamis: hanya muncul jika user sudah login, tapi sedang tidak berada di halaman /dashboard-->
-         <UButton
-         v-if="route.path !== '/dashboard'"
-         to="/dashboard"
-         variant="solid"
-         label="Ke Dashboard"
-         icon="i-heroicons-arrow-right-on-rectangle"
-         class="cursor-pointer font-bold shrink-0 text-xs sm:text-sm"
-         >
-        <span class="hidden sm:inline">Ke Dashboard </span>
-        </UButton>
-        <UDropdownMenu :items="dropdownItems">
-          <UAvatar
-            v-bind="avatarProps"
-            :alt="user.email"
-            size="xl"
-            class="cursor-pointer"
-          />
-          <!-- Slot khusus untuk menampilkan email user di dropdown -->
-          <template #account>
-            <div class="text-left">
-              <p class="text-xs text-gray-500 dark:text-gray-400">
-                Signed in as
-              </p>
-              <p
-                class="text-sm font-medium text-gray-900 dark:text-white truncate"
-              >
-                {{ user.email }}
-              </p>
-            </div>
-          </template>
-        </UDropdownMenu>
-      </div>
-      <div v-else-if="route.path !== '/login' && route.path !== '/confirm'">
-        <UButton
-          to="/login"
+      <img src="/favicon.ico" class="w-8 h-8 sm:w-10 sm:h-10 rounded-md" />
+      <span class="text-3xl font-extrabold tracking-tight">FTracker</span>
+    </NuxtLink>
+
+    <div class="flex items-center gap-2 sm:gap-3">
+      <!-- Dark / Light Mode Toggle Button -->
+      <ClientOnly>
+        <UColorModeButton
           variant="ghost"
-          label="Login"
-          class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-        >
-          Login
-        </UButton>
-      </div>
-      <!-- Opsional: munculin buletan kosong sementara gambarnya di-load -->
-      <template #fallback>
-        <USkeleton class="h-8 w-8 rounded-full" />
-      </template>
-    </ClientOnly>
+          color="neutral"
+          class="cursor-pointer rounded-full"
+        />
+        <template #fallback>
+          <div class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 animate-pulse" />
+        </template>
+      </ClientOnly>
+
+      <ClientOnly>
+        <div v-if="user" class="flex items-center gap-2 sm:gap-4">
+          <!-- tombol dinamis: hanya muncul jika user sudah login, tapi sedang tidak berada di halaman /dashboard-->
+          <UButton
+            v-if="route.path !== '/dashboard'"
+            to="/dashboard"
+            variant="solid"
+            label="Ke Dashboard"
+            icon="i-heroicons-arrow-right-on-rectangle"
+            class="cursor-pointer font-bold shrink-0 text-xs sm:text-sm"
+          >
+            <span class="hidden sm:inline">Ke Dashboard </span>
+          </UButton>
+          <UDropdownMenu :items="dropdownItems">
+            <UAvatar
+              v-bind="avatarProps"
+              :alt="user.email"
+              size="xl"
+              class="cursor-pointer ring-2 ring-gray-200 dark:ring-gray-700 transition hover:scale-105"
+            />
+            <!-- Slot khusus untuk menampilkan email user di dropdown -->
+            <template #account>
+              <div class="text-left">
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                  Signed in as
+                </p>
+                <p
+                  class="text-sm font-medium text-gray-900 dark:text-white truncate"
+                >
+                  {{ user.email }}
+                </p>
+              </div>
+            </template>
+          </UDropdownMenu>
+        </div>
+        <div v-else-if="route.path !== '/login' && route.path !== '/confirm'">
+          <UButton
+            to="/login"
+            variant="solid"
+            color="primary"
+            class="px-4 py-2 font-semibold shadow-sm transition"
+          >
+            Login
+          </UButton>
+        </div>
+        <!-- Opsional: munculin buletan kosong sementara gambarnya di-load -->
+        <template #fallback>
+          <USkeleton class="h-8 w-8 rounded-full" />
+        </template>
+      </ClientOnly>
+    </div>
   </header>
 </template>
