@@ -26,6 +26,9 @@ export default defineNuxtConfig({
     public: {
       // Akan bernilai true jika di .env ditulis NUXT_PUBLIC_MEMBER_MODE="true"
       memberMode: process.env.NUXT_PUBLIC_MEMBER_MODE === 'true',
+
+      // Domain publik untuk og:url & og:image, dibaca dari NUXT_PUBLIC_SITE_URL
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || 'https://pelacak-keuangan-mulia.vercel.app',
       
       // Keperluan Universal App (Pillar 1)
       appName: process.env.NUXT_PUBLIC_APP_NAME || 'Financial App',

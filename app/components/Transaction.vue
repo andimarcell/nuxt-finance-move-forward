@@ -48,25 +48,89 @@ const icon = computed(() => {
 
 const supabase = useSupabaseClient();
 const toast = useToast();
+const { requestRefresh } = useTransactionsRefresh();
 const isLoading = ref(false);
+const isConfirmOpen = ref(false);
+
+// Hapus itu permanen, jadi selalu minta konfirmasi dulu
+const requestDelete = () => {
+  if (props.readOnly) return;
+  isConfirmOpen.value = true;
+};
+
+// Kembalikan transaksi yang baru dihapus memakai id & data aslinya
+const undoDelete = async (snapshot) => {
+  isLoading.value = true;
+  try {
+    const { error: insertError } = await supabase
+      .from("transactions")
+      .insert(snapshot);
+
+    if (insertError) throw insertError;
+
+    toast.add({
+      title: "Transaksi dikembalikan",
+      description: "Data sudah tercatat kembali seperti semula.",
+      icon: "i-heroicons-arrow-uturn-left",
+      color: "success",
+    });
+    // Baris ini biasanya sudah unmount saat tombol Urungkan diklik,
+    // jadi minta refresh lewat sinyal global, bukan lewat emit ke parent
+    requestRefresh();
+  } catch (error) {
+    console.error("Error restoring transaction:", error);
+    toast.add({
+      title: "Gagal mengembalikan",
+      description:
+        error?.message || "Transaksi tidak bisa dipulihkan, silakan catat ulang.",
+      icon: "i-heroicons-exclamation-circle",
+      color: "error",
+    });
+  } finally {
+    isLoading.value = false;
+  }
+};
 
 const deleteTransaction = async () => {
   // Guard tambahan untuk keamanan sisi script
   if (props.readOnly) return;
 
+  isConfirmOpen.value = false;
   isLoading.value = true;
+
+  // Simpan salinan baris sebelum dihapus supaya tombol Urungkan bisa bekerja
+  const snapshot = { ...props.transaction };
+
   try {
-    await supabase.from("transactions").delete().eq("id", props.transaction.id);
+    const { error: deleteError } = await supabase
+      .from("transactions")
+      .delete()
+      .eq("id", snapshot.id);
+
+    if (deleteError) throw deleteError;
+
     toast.add({
-      title: "Transaksi berhasil dihapus!",
-      icon: "i-heroicons-check-circle-20-solid",
-      color: "success",
+      title: "Transaksi dihapus",
+      description: snapshot.description || "Data transaksi sudah dihapus.",
+      icon: "i-heroicons-trash",
+      color: "neutral",
+      duration: 10000,
+      actions: [
+        {
+          label: "Urungkan",
+          icon: "i-heroicons-arrow-uturn-left",
+          color: "primary",
+          variant: "solid",
+          onClick: () => undoDelete(snapshot),
+        },
+      ],
     });
-    emit("delete", props.transaction.id);
+    emit("delete", snapshot.id);
   } catch (error) {
     console.error("Error deleting transaction:", error);
     toast.add({
-      title: "Error",
+      title: "Gagal menghapus",
+      description: error?.message || "Terjadi kesalahan, coba lagi sebentar lagi.",
       icon: "i-heroicons-exclamation-circle",
       color: "error",
     });
@@ -89,7 +153,7 @@ const actions = computed(() => [
       label: "Hapus",
       icon: "i-heroicons-trash",
       class: "cursor-pointer duration-75",
-      onSelect: deleteTransaction,
+      onSelect: requestDelete,
     },
   ],
 ]);
@@ -211,5 +275,55 @@ const categoryLabel = computed(() => {
         </div>
       </div>
     </div>
+
+    <!-- Konfirmasi sebelum menghapus: hapus bersifat permanen -->
+    <UModal
+      v-model:open="isConfirmOpen"
+      title="Hapus transaksi ini?"
+      description="Transaksi akan dihapus permanen. Kalau salah hapus, masih bisa dikembalikan lewat tombol Urungkan pada notifikasi."
+      :dismissible="false"
+      :close="{ color: 'neutral', variant: 'ghost', class: 'cursor-pointer' }"
+    >
+      <template #body>
+        <div class="flex items-start gap-3">
+          <div
+            class="w-10 h-10 shrink-0 rounded-xl bg-red-500/10 text-red-600 dark:text-red-400 flex items-center justify-center"
+          >
+            <UIcon name="i-heroicons-exclamation-triangle" class="w-5 h-5" />
+          </div>
+          <div class="min-w-0 text-left">
+            <p
+              class="text-sm font-semibold text-gray-900 dark:text-white wrap-break-word"
+            >
+              {{ transaction?.description }}
+            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              {{ categoryLabel }} &middot; {{ amount.main }}
+            </p>
+          </div>
+        </div>
+      </template>
+
+      <template #footer>
+        <div class="flex justify-end gap-2 w-full">
+          <UButton
+            label="Batal"
+            color="neutral"
+            variant="ghost"
+            class="cursor-pointer font-semibold"
+            @click="isConfirmOpen = false"
+          />
+          <UButton
+            label="Hapus"
+            icon="i-heroicons-trash"
+            color="error"
+            variant="solid"
+            class="cursor-pointer font-semibold"
+            :loading="isLoading"
+            @click="deleteTransaction"
+          />
+        </div>
+      </template>
+    </UModal>
   </div>
 </template>

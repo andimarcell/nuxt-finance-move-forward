@@ -39,6 +39,7 @@ const { current, previous } = useSelectedTimePeriod(
 const {
   transactions,
   isLoading,
+  error: currentPeriodError,
   refreshTransactions,
   income,
   expense,
@@ -50,15 +51,26 @@ const {
 
 const {
   refreshTransactions: refreshPreviousTransactions,
+  error: previousPeriodError,
   incomeTotal: previousIncomeTotal,
   expenseTotal: previousExpenseTotal,
   savingsTotal: previousSavingsTotal,
   balanceTotal: previousBalanceTotal,
 } = useFetchTransactions(previous);
 
+// Gagal memuat data itu beda dengan "belum ada transaksi", jadi ditampilkan terpisah
+const fetchError = computed(
+  () => currentPeriodError.value || previousPeriodError.value,
+);
+
 const refreshAll = async () => {
   await Promise.all([refreshTransactions(), refreshPreviousTransactions()]);
 };
+
+// Sinyal refresh dari komponen lain, contohnya tombol "Urungkan" pada toast
+// setelah transaksi dihapus (ketika diklik, barisnya sudah unmount)
+const { refreshToken } = useTransactionsRefresh();
+watch(refreshToken, () => refreshAll());
 
 const nextPeriod = () => {
   if (selectedView.value === "tahunan")
@@ -400,6 +412,35 @@ const exportMenuItems = computed(() => [
       </div>
     </section>
 
+    <!-- Error State: pengambilan data ke Supabase gagal -->
+    <section
+      v-if="fetchError"
+      class="flex flex-col items-center justify-center py-14 px-4 text-center border border-dashed border-red-200 dark:border-red-900/60 rounded-2xl bg-red-50/60 dark:bg-red-950/20 my-4"
+    >
+      <div
+        class="w-14 h-14 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 flex items-center justify-center mb-3"
+      >
+        <UIcon name="i-heroicons-exclamation-triangle" class="w-7 h-7" />
+      </div>
+      <h3
+        class="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-1"
+      >
+        Gagal Memuat Data
+      </h3>
+      <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-sm mb-4">
+        {{ fetchError }}
+      </p>
+      <UButton
+        label="Coba Lagi"
+        icon="i-heroicons-arrow-path"
+        color="error"
+        variant="subtle"
+        class="cursor-pointer font-semibold"
+        :loading="isLoading"
+        @click="refreshAll()"
+      />
+    </section>
+
     <section
       class="grid text-sm grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-10"
     >
@@ -586,7 +627,7 @@ const exportMenuItems = computed(() => [
 
       <!-- Modern Empty State: bedakan periode yang kosong dengan filter tanpa hasil -->
       <div
-        v-if="!isLoading && filteredTransactionsList.length === 0"
+        v-if="!isLoading && !fetchError && filteredTransactionsList.length === 0"
         class="flex flex-col items-center justify-center py-16 px-4 text-center border border-dashed border-gray-200 dark:border-gray-800 rounded-2xl bg-gray-50/50 dark:bg-gray-900/40 my-4"
       >
         <div class="w-14 h-14 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-3">

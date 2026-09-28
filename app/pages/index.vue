@@ -11,7 +11,6 @@ useSeoMeta({
   title: "FTracker - Catat Kas, Bagikan Laporan ke Anggota",
   description:
     "FTracker untuk bendahara dan keuangan pribadi: catat pemasukan dan pengeluaran, lihat ringkasan per periode, unduh rekap Excel/PDF per anggota.",
-  ogImage: "/preview-dashboard.png",
 });
 
 const ctaDestination = computed(() => {
