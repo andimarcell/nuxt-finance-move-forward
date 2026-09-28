@@ -21,7 +21,10 @@ watch(
       class="w-10 h-10 animate-spin text-primary"
     />
     <p class="text-xl font-semibold text-gray-700 dark:text-gray-300">
-      Authenticating... Please wait.
+      Memverifikasi tautan login...
+    </p>
+    <p class="text-sm text-gray-500 dark:text-gray-400">
+      Tunggu sebentar, Anda akan diarahkan ke dashboard.
     </p>
   </div>
 </template>

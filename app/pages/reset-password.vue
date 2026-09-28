@@ -102,14 +102,20 @@ const handleResetPassword = async () => {
 </script>
 
 <template>
-  <div class="max-w-md mx-auto mt-20 px-4">
-    <UCard>
+  <div class="max-w-md mx-auto mt-10 sm:mt-16 px-4 pb-16 animate-fade-in-up">
+    <div class="flex flex-col items-center text-center mb-6">
+      <NuxtLink to="/" class="flex items-center gap-2 hover:opacity-80 transition">
+        <img src="/favicon.ico" class="w-10 h-10 rounded-lg shadow-sm" alt="FTracker" />
+        <span class="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">FTracker</span>
+      </NuxtLink>
+    </div>
+    <UCard class="shadow-lg rounded-2xl">
       <template #header>
-        <h3 class="text-lg font-bold leading-6 text-gray-900 dark:text-white">
+        <h3 class="text-lg font-extrabold leading-6 text-gray-900 dark:text-white">
           Ubah Kata Sandi
         </h3>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          Demi keamanan, Anda wajib memasukkan kata sandi lama sebelum menetapkan kata sandi baru.
+        <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
+          Masukkan kata sandi lama, lalu tetapkan kata sandi baru minimal 6 karakter.
         </p>
       </template>
 
@@ -154,10 +160,12 @@ const handleResetPassword = async () => {
           color="primary"
           variant="solid"
           block
-          class="mt-6 cursor-pointer"
+          size="lg"
+          class="mt-6 cursor-pointer font-bold rounded-xl disabled:opacity-70"
           :loading="isLoading"
+          :disabled="isLoading"
         >
-          Perbarui Kata Sandi
+          {{ isLoading ? "Menyimpan..." : "Perbarui Kata Sandi" }}
         </UButton>
       </form>
     </UCard>
