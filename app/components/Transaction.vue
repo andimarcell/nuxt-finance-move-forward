@@ -201,6 +201,7 @@ const categoryLabel = computed(() => {
             {{ amount.main }}
           </span>
           <sup
+            v-if="amount.fraction"
             class="text-[0.65rem] sm:text-[0.75rem] font-bold ml-0.5 mt-0.5 sm:mt-1 opacity-70 text-gray-500 dark:text-gray-400"
           >
             {{ amount.fraction }}

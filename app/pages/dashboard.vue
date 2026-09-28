@@ -86,36 +86,6 @@ const periodLabel = computed(() => {
   return format(referenceDate.value, "d MMMM yyyy", { locale: id });
 });
 
-const incomeStatusColor = computed(() => {
-  return incomeTotal.value < previousIncomeTotal.value
-    ? "text-red-600 dark:text-red-400"
-    : "text-green-600 dark:text-green-400";
-});
-
-const expenseStatusColor = computed(() => {
-  const isSpendingMore = expenseTotal.value > previousExpenseTotal.value;
-  const isOverBudget = expenseTotal.value > incomeTotal.value;
-
-  return isSpendingMore || isOverBudget
-    ? "text-red-600 dark:text-red-400"
-    : "text-green-600 dark:text-green-400";
-});
-
-const savingsStatusColor = computed(() => {
-  const isDecreasing = savingsTotal.value < previousSavingsTotal.value;
-  const isNegative = savingsTotal.value < 0;
-
-  return isDecreasing || isNegative
-    ? "text-red-600 dark:text-red-400"
-    : "text-green-600 dark:text-green-400";
-});
-
-const cashColor = computed(() => {
-  return balanceTotal.value < 0
-    ? "text-red-600 dark:text-red-400"
-    : "text-green-600 dark:text-green-400";
-});
-
 const activeChartType = ref("all");
 const selectedCategory = ref("all");
 const searchQuery = ref("");
@@ -396,28 +366,24 @@ const exportMenuItems = computed(() => [
         :amount="incomeTotal"
         :lastAmount="previousIncomeTotal"
         :loading="isLoading"
-        :color="incomeStatusColor"
       />
       <Trend
         title="Pengeluaran"
         :amount="expenseTotal"
         :lastAmount="previousExpenseTotal"
         :loading="isLoading"
-        :color="expenseStatusColor"
       />
       <Trend
         title="Tabungan"
         :amount="savingsTotal"
         :lastAmount="previousSavingsTotal"
         :loading="isLoading"
-        :color="savingsStatusColor"
       />
       <Trend
         title="Total Saldo"
         :amount="balanceTotal"
         :lastAmount="previousBalanceTotal"
         :loading="isLoading"
-        :color="cashColor"
       />
     </section>
 

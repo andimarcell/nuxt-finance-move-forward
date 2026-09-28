@@ -31,9 +31,11 @@ const { currency: amount } = useCurrency(total);
       <div class="flex items-start">
         <span class="text-md">{{ amount.main }}</span>
         <!-- sup bikin teks naik, text-sm ngecilin ukurannya -->
-        <sup class="text-[0.75rem] font-semibold ml-0.5 mt-3 opacity-70">{{
-          amount.fraction
-        }}</sup>
+        <sup
+          v-if="amount.fraction"
+          class="text-[0.75rem] font-semibold ml-0.5 mt-3 opacity-70"
+          >{{ amount.fraction }}</sup
+        >
       </div>
     </div>
   </div>
