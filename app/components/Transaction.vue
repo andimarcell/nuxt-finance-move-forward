@@ -143,7 +143,7 @@ const categoryLabel = computed(() => {
           </UTooltip>
 
           <div
-            class="w-full bg-gray-100 dark:bg-gray-800 h-1.5 rounded-full overflow-hidden mt-2 max-w-50 sm:max-w-xs"
+            class="w-36 sm:w-48 bg-gray-100 dark:bg-gray-800 h-1.5 rounded-full overflow-hidden mt-2"
           >
             <div
               class="h-full rounded-full transition-all duration-300"
