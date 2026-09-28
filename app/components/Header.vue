@@ -61,19 +61,6 @@ const dropdownItems = computed(() => [
   ],
 ]);
 
-const avatarUrl = computed(() => {
-  if (!user.value) return null;
-
-  // 1. Jika user punya foto asli (misal nanti kamu tambah fitur login Google), pakai foto asli
-  if (user.value.user_metadata?.avatar_url) {
-    return user.value.user_metadata.avatar_url;
-  }
-
-  // 2. Jika tidak ada foto (Magic Link), generate warna unik berdasarkan email!
-  const email = user.value.email || "User";
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(email)}&background=random&color=fff&bold=true`;
-});
-
 // Fungsi untuk logout
 const logout = async () => {
   await supabase.auth.signOut();
@@ -113,11 +100,10 @@ const logout = async () => {
             v-if="route.path !== '/dashboard'"
             to="/dashboard"
             variant="solid"
-            label="Ke Dashboard"
             icon="i-heroicons-arrow-right-on-rectangle"
             class="cursor-pointer font-bold shrink-0 text-xs sm:text-sm"
           >
-            <span class="hidden sm:inline">Ke Dashboard </span>
+            <span class="hidden sm:inline">Ke Dashboard</span>
           </UButton>
           <UDropdownMenu :items="dropdownItems">
             <UAvatar
@@ -130,7 +116,7 @@ const logout = async () => {
             <template #account>
               <div class="text-left">
                 <p class="text-xs text-gray-500 dark:text-gray-400">
-                  Signed in as
+                  Masuk sebagai
                 </p>
                 <p
                   class="text-sm font-medium text-gray-900 dark:text-white truncate"

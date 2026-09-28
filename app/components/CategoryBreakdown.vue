@@ -251,14 +251,13 @@ const chartOptions = computed(() => {
               show: true,
               // Tampilkan nama kategori aktif dari activeIndex saat TIDAK HOVER
               label:
-                categorySummary.value.list.length > 0
-                  ? categorySummary.value.list[activeIndex.value].name
-                  : "Nihil",
+                categorySummary.value.list[activeIndex.value]?.name ?? "Nihil",
               color: "#9ca3af",
               // Tampilkan persen kategori aktif dari activeIndex saat TIDAK HOVER
               formatter: function () {
-                if (categorySummary.value.list.length === 0) return "0%";
-                return categorySummary.value.list[activeIndex.value].percent;
+                return (
+                  categorySummary.value.list[activeIndex.value]?.percent ?? "0%"
+                );
               },
             },
           },
@@ -304,7 +303,7 @@ const toggleLegendCategory = (item, index) => {
   >
     <!-- 1. BAGIAN HEADER (Judul, Subjudul, & Sakelar Belanja/Masuk) -->
     <div
-      class="flex flex-col sm:flex-row item-start sm:items-center justify-between gap-4 mb-6"
+      class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6"
     >
       <div>
         <h3

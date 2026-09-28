@@ -46,14 +46,6 @@ const icon = computed(() => {
   return "i-heroicons-tag";
 });
 
-const iconColor = computed(() => {
-  if (isIncome.value) {
-    return "text-green-500";
-  } else {
-    return "text-red-500";
-  }
-});
-
 const supabase = useSupabaseClient();
 const toast = useToast();
 const isLoading = ref(false);
@@ -83,7 +75,7 @@ const deleteTransaction = async () => {
   }
 };
 
-const actions = [
+const actions = computed(() => [
   [
     {
       label: "Ubah",
@@ -100,7 +92,7 @@ const actions = [
       onSelect: deleteTransaction,
     },
   ],
-];
+]);
 // Format nama kategori agar huruf pertamanya Kapital
 const categoryLabel = computed(() => {
   const cat = props.transaction.category?.trim() || "Lainnya";
@@ -113,9 +105,6 @@ const categoryLabel = computed(() => {
     v-if="props.transaction"
     class="border-b border-gray-100 dark:border-gray-800/80 py-3.5 px-3 rounded-xl hover:bg-gray-50/70 dark:hover:bg-gray-800/40 transition-colors duration-150 flex sm:grid sm:grid-cols-2 items-center justify-between sm:justify-stretch gap-4"
   >
-    <!-- ======================================================== -->
-    <!-- SISI KIRI (Kolom 1 di Desktop [50%], Flex-Row di Mobile) -->
-    <!-- ======================================================== -->
     <div
       class="flex items-start sm:items-center justify-between min-w-0 flex-1 sm:flex-none"
     >
@@ -189,9 +178,6 @@ const categoryLabel = computed(() => {
       </div>
     </div>
 
-    <!-- ======================================================== -->
-    <!-- SISI KANAN (Kolom 2 di Desktop [50%], Flex-Row di Mobile) -->
-    <!-- ======================================================== -->
     <div class="flex items-center justify-end shrink-0 sm:w-full">
       <div class="flex items-center gap-2">
         <div class="flex items-start text-right">
@@ -208,7 +194,6 @@ const categoryLabel = computed(() => {
           </sup>
         </div>
 
-        <!-- 🔒 SENSOR: Sembunyikan Tombol Titik Tiga (Edit/Hapus) jika dalam Member Mode -->
         <div v-if="!readOnly" class="z-50">
           <UDropdownMenu
             :items="actions"

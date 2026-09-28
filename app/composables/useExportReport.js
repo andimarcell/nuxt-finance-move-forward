@@ -247,8 +247,9 @@ export const useExportReport = () => {
       );
       toast.add({
         title: "Berhasil!",
-        description: "Excel Detail diunduh.",
+        description: "Excel detail berhasil diunduh.",
         color: "success",
+        icon: "i-heroicons-check-circle",
       });
     });
 
@@ -315,8 +316,9 @@ export const useExportReport = () => {
       );
       toast.add({
         title: "Berhasil!",
-        description: "PDF Detail diunduh.",
+        description: "PDF detail berhasil diunduh.",
         color: "success",
+        icon: "i-heroicons-check-circle",
       });
     });
 
@@ -439,8 +441,9 @@ export const useExportReport = () => {
       );
       toast.add({
         title: "Berhasil!",
-        description: "Excel Matriks Nama Kegabung berhasil diunduh.",
+        description: "Excel matriks rekap kas berhasil diunduh.",
         color: "success",
+        icon: "i-heroicons-check-circle",
       });
     });
 
@@ -522,8 +525,9 @@ export const useExportReport = () => {
       );
       toast.add({
         title: "Berhasil!",
-        description: "PDF Matriks Nama Kegabung berhasil diunduh.",
+        description: "PDF matriks rekap kas berhasil diunduh.",
         color: "success",
+        icon: "i-heroicons-check-circle",
       });
     });
 

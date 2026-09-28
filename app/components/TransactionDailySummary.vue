@@ -1,7 +1,16 @@
 <script setup>
+import { format, parseISO } from "date-fns";
+import { id } from "date-fns/locale";
+
 const props = defineProps({
   date: String,
   transaction: Array,
+});
+
+// Kunci tanggal dari database masih ISO (yyyy-MM-dd), tampilkan versi ramah baca
+const formattedDate = computed(() => {
+  if (!props.date) return "";
+  return format(parseISO(props.date), "EEE, d MMM yyyy", { locale: id });
 });
 
 const total = computed(() => {
@@ -24,7 +33,7 @@ const { currency: amount } = useCurrency(total);
     class="grid grid-cols-2 items-center border-b border-gray-200 dark:border-gray-800 py-2.5 mt-2 text-gray-500 dark:text-gray-400 font-semibold"
   >
     <div class="text-sm">
-      {{ date }}
+      <time :datetime="date">{{ formattedDate }}</time>
     </div>
     <div class="flex items-center justify-end">
       <div class="flex items-start text-sm">

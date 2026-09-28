@@ -278,7 +278,7 @@ const handleForgotPassword = async () => {
             :loading="isLoading"
             class="w-full"
           >
-            <!-- Tombol Ikon Mata di Sebelah Kanan Input -->
+            <!--f Tombol Ikon Mata di Sebelah Kanan Input -->
             <template #trailing>
               <UButton
                 color="neutral"
@@ -329,7 +329,7 @@ const handleForgotPassword = async () => {
       <!-- Info keamanan -->
       <div class="mt-6 flex items-center justify-center gap-2 text-[11px] text-gray-400 dark:text-gray-500">
         <UIcon name="i-heroicons-shield-check" class="w-4 h-4" />
-        <span>Dilindungi autentikasi terenkripsi Supabase</span>
+        <span>Dilindungi autentikasi terenkripsi</span>
       </div>
     </UCard>
 

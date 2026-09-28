@@ -112,6 +112,22 @@ const getCategoryValue = (cat) => {
   return cat;
 };
 
+// Cek apakah ada filter aktif (tipe grafik, kategori, legenda, atau pencarian)
+const isFilterActive = computed(
+  () =>
+    activeChartType.value !== "all" ||
+    getCategoryValue(selectedCategory.value) !== "all" ||
+    !!activeCategory.value ||
+    !!searchQuery.value?.trim(),
+);
+
+const resetFilters = () => {
+  searchQuery.value = "";
+  selectedCategory.value = "all";
+  activeCategory.value = null;
+  activeChartType.value = "all";
+};
+
 // 🟢 FILTER PRESISI LENGKAP: Memisahkan data array yang lolos semua kriteria filter
 const filteredTransactionsList = computed(() => {
   const txs = transactions.value || [];
@@ -414,16 +430,14 @@ const exportMenuItems = computed(() => [
     </section>
 
     <section class="mb-10">
-      <div class="order-1 lg:order-2 lg:col-span-1">
-        <CategoryBreakdown
-          :transactions="transactions"
-          :period="selectedView"
-          :periodLabel="periodLabel"
-          v-model:chartType="activeChartType"
-          v-model:activeCategory="activeCategory"
-          :key="activeChartType"
-        />
-      </div>
+      <CategoryBreakdown
+        :transactions="transactions"
+        :period="selectedView"
+        :periodLabel="periodLabel"
+        v-model:chartType="activeChartType"
+        v-model:activeCategory="activeCategory"
+        :key="activeChartType"
+      />
     </section>
 
     <section
@@ -550,51 +564,69 @@ const exportMenuItems = computed(() => [
       :class="{ 'opacity-50': isLoading, 'transition-opacity': true }"
       class="min-h-150"
     >
-      <div class="order-2 lg:order-1 lg:col-span-2">
-        <div
-          v-for="(transactionOnDay, date) in filteredGroupByDate"
-          :key="date"
-          class="mb-10"
-        >
-          <TransactionDailySummary :date="date" :transaction="transactionOnDay" />
+      <div
+        v-for="(transactionOnDay, date) in filteredGroupByDate"
+        :key="date"
+        class="mb-10"
+      >
+        <TransactionDailySummary :date="date" :transaction="transactionOnDay" />
 
-          <TransitionGroup name="list-item" tag="div">
-            <Transaction
-              v-for="transaction in transactionOnDay"
-              :key="transaction.id"
-              :transaction="transaction"
-              :totalAmount="activeTotalAmount"
-              :read-only="isMemberMode"
-              @edit="onEditClick(transaction)"
-              @delete="refreshAll()"
-            />
-          </TransitionGroup>
-        </div>
+        <TransitionGroup name="list-item" tag="div">
+          <Transaction
+            v-for="transaction in transactionOnDay"
+            :key="transaction.id"
+            :transaction="transaction"
+            :totalAmount="activeTotalAmount"
+            :read-only="isMemberMode"
+            @edit="onEditClick(transaction)"
+            @delete="refreshAll()"
+          />
+        </TransitionGroup>
+      </div>
 
-        <!-- Modern Empty State -->
-        <div
-          v-if="transactions.length === 0 && !isLoading"
-          class="flex flex-col items-center justify-center py-16 px-4 text-center border border-dashed border-gray-200 dark:border-gray-800 rounded-2xl bg-gray-50/50 dark:bg-gray-900/40 my-4"
-        >
-          <div class="w-14 h-14 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-3">
-            <UIcon name="i-heroicons-document-text" class="w-7 h-7" />
-          </div>
-          <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-1">
-            Belum Ada Transaksi
-          </h3>
-          <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-sm mb-4">
-            Tidak ada riwayat pemasukan atau pengeluaran pada periode ini.
-          </p>
-          <UButton
-            v-if="!isMemberMode"
-            label="Catat Transaksi Sekarang"
-            icon="i-heroicons-plus-circle"
-            color="primary"
-            variant="solid"
-            class="cursor-pointer font-semibold shadow-sm"
-            @click="onAddClick"
+      <!-- Modern Empty State: bedakan periode yang kosong dengan filter tanpa hasil -->
+      <div
+        v-if="!isLoading && filteredTransactionsList.length === 0"
+        class="flex flex-col items-center justify-center py-16 px-4 text-center border border-dashed border-gray-200 dark:border-gray-800 rounded-2xl bg-gray-50/50 dark:bg-gray-900/40 my-4"
+      >
+        <div class="w-14 h-14 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-3">
+          <UIcon
+            :name="
+              isFilterActive
+                ? 'i-heroicons-magnifying-glass'
+                : 'i-heroicons-document-text'
+            "
+            class="w-7 h-7"
           />
         </div>
+        <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-1">
+          {{ isFilterActive ? "Tidak Ada yang Cocok" : "Belum Ada Transaksi" }}
+        </h3>
+        <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-sm mb-4">
+          {{
+            isFilterActive
+              ? "Tidak ada transaksi yang cocok dengan filter atau kata kunci saat ini."
+              : "Tidak ada riwayat pemasukan atau pengeluaran pada periode ini."
+          }}
+        </p>
+        <UButton
+          v-if="isFilterActive"
+          label="Reset Filter"
+          icon="i-heroicons-arrow-path"
+          color="neutral"
+          variant="subtle"
+          class="cursor-pointer font-semibold"
+          @click="resetFilters"
+        />
+        <UButton
+          v-else
+          label="Catat Transaksi Sekarang"
+          icon="i-heroicons-plus-circle"
+          color="primary"
+          variant="solid"
+          class="cursor-pointer font-semibold shadow-sm"
+          @click="onAddClick"
+        />
       </div>
     </section>
 

@@ -169,7 +169,6 @@ const state = reactive({
   amount: 0,
   type: "income",
   category: "",
-  category_icon: "",
   created_at: format(new Date(), "yyyy-MM-dd"),
 });
 
@@ -425,115 +424,115 @@ async function onSubmit(event) {
         </UFormField>
         <Transition name="field-slide">
           <div v-if="isCategoryFilled" class="space-y-4">
-          <UFormField label="Keterangan" name="description" v-slot="{ error }">
-            <textarea
-              ref="textareaRef"
-              v-model="state.description"
-              placeholder="Masukkan keterangan..."
-              rows="1"
-              @input="autoResize"
-              :class="[
-                'relative block w-full resize-none overflow-hidden focus:outline-none rounded-md placeholder-gray-400 dark:placeholder-gray-500 text-sm px-3 py-2 border bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-150',
-                error
-                  ? 'ring-1 ring-red-400 dark:ring-red-400 border-red-400 dark:border-red-400'
-                  : 'focus:ring-2 focus:ring-primary-400 dark:focus:ring-primary-400 border-gray-300 dark:border-gray-700',
-              ]"
-            ></textarea>
-          </UFormField>
+            <UFormField label="Keterangan" name="description" v-slot="{ error }">
+              <textarea
+                ref="textareaRef"
+                v-model="state.description"
+                placeholder="Masukkan keterangan..."
+                rows="1"
+                @input="autoResize"
+                :class="[
+                  'relative block w-full resize-none overflow-hidden focus:outline-none rounded-md placeholder-gray-400 dark:placeholder-gray-500 text-sm px-3 py-2 border bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-150',
+                  error
+                    ? 'ring-1 ring-red-400 dark:ring-red-400 border-red-400 dark:border-red-400'
+                    : 'focus:ring-2 focus:ring-primary-400 dark:focus:ring-primary-400 border-gray-300 dark:border-gray-700',
+                ]"
+              ></textarea>
+            </UFormField>
 
-          <UFormField label="Nominal" name="amount">
-            <UInput
-              v-model.number="state.amount"
-              type="number"
-              class="w-full"
-            />
+            <UFormField label="Nominal" name="amount">
+              <UInput
+                v-model.number="state.amount"
+                type="number"
+                class="w-full"
+              />
 
-            <Transition name="field-fade">
-              <div
-                v-if="isOverBudget"
-                class="flex items-start gap-1 mt-2 text-red-500 dark:text-red-400 text-sm font-medium"
-              >
-                <UIcon
-                  name="i-heroicons-exclamation-triangle"
-                  class="w-5 h-5 shrink-0"
-                />
-                <p>
-                  Saldo tidak mencukupi! Sisa saldo yang bisa Anda gunakan hanya
-                  <strong>{{ formattedAvailableBalance }}</strong>
-                </p>
+              <Transition name="field-fade">
+                <div
+                  v-if="isOverBudget"
+                  class="flex items-start gap-1 mt-2 text-red-500 dark:text-red-400 text-sm font-medium"
+                >
+                  <UIcon
+                    name="i-heroicons-exclamation-triangle"
+                    class="w-5 h-5 shrink-0"
+                  />
+                  <p>
+                    Saldo tidak mencukupi! Sisa saldo yang bisa Anda gunakan hanya
+                    <strong>{{ formattedAvailableBalance }}</strong>
+                  </p>
+                </div>
+              </Transition>
+            </UFormField>
+
+            <UFormField label="Jenis Transaksi" name="type">
+              <div class="grid grid-cols-2 gap-2 mt-1">
+                <button
+                  type="button"
+                  @click="state.type = 'income'"
+                  class="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border text-sm font-semibold transition-all cursor-pointer"
+                  :class="
+                    state.type === 'income'
+                      ? 'border-green-500 bg-green-500/10 text-green-600 dark:text-green-400 ring-2 ring-green-500/30'
+                      : 'border-gray-200 dark:border-gray-800 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                  "
+                >
+                  <UIcon name="i-heroicons-arrow-down-left" class="w-4 h-4" />
+                  <span>Pemasukan</span>
+                </button>
+
+                <button
+                  type="button"
+                  @click="state.type = 'expense'"
+                  class="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border text-sm font-semibold transition-all cursor-pointer"
+                  :class="
+                    state.type === 'expense'
+                      ? 'border-red-500 bg-red-500/10 text-red-600 dark:text-red-400 ring-2 ring-red-500/30'
+                      : 'border-gray-200 dark:border-gray-800 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+                  "
+                >
+                  <UIcon name="i-heroicons-arrow-up-right" class="w-4 h-4" />
+                  <span>Pengeluaran</span>
+                </button>
               </div>
-            </Transition>
-          </UFormField>
+            </UFormField>
 
-          <UFormField label="Jenis Transaksi" name="type">
-            <div class="grid grid-cols-2 gap-2 mt-1">
-              <button
-                type="button"
-                @click="state.type = 'income'"
-                class="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border text-sm font-semibold transition-all cursor-pointer"
-                :class="
-                  state.type === 'income'
-                    ? 'border-green-500 bg-green-500/10 text-green-600 dark:text-green-400 ring-2 ring-green-500/30'
-                    : 'border-gray-200 dark:border-gray-800 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50'
-                "
-              >
-                <UIcon name="i-heroicons-arrow-down-left" class="w-4 h-4" />
-                <span>Pemasukan</span>
-              </button>
+            <UFormField label="Tanggal" name="created_at">
+              <UInput
+                v-model="state.created_at"
+                type="date"
+                icon="i-heroicons-calendar-20-solid"
+                class="w-full"
+              />
+            </UFormField>
 
-              <button
-                type="button"
-                @click="state.type = 'expense'"
-                class="flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border text-sm font-semibold transition-all cursor-pointer"
-                :class="
-                  state.type === 'expense'
-                    ? 'border-red-500 bg-red-500/10 text-red-600 dark:text-red-400 ring-2 ring-red-500/30'
-                    : 'border-gray-200 dark:border-gray-800 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800/50'
+            <div class="flex justify-between pt-4">
+              <UButton
+                type="submit"
+                :label="
+                  isLoading
+                    ? 'Menyimpan...'
+                    : isOverBudget
+                      ? 'Saldo Tidak Cukup'
+                      : isEditing
+                        ? 'Simpan Perubahan'
+                        : 'Simpan Transaksi'
                 "
+                :loading="isLoading"
+                :disabled="isOverBudget"
+                :color="isOverBudget ? 'error' : 'primary'"
+                class="cursor-pointer active:scale-95 disabled:opacity-70"
+              />
+              <UButton
+                variant="outline"
+                color="neutral"
+                :disabled="isLoading"
+                @click="clearForm"
+                class="cursor-pointer active:scale-95"
               >
-                <UIcon name="i-heroicons-arrow-up-right" class="w-4 h-4" />
-                <span>Pengeluaran</span>
-              </button>
+                Bersihkan
+              </UButton>
             </div>
-          </UFormField>
-
-          <UFormField label="Tanggal" name="created_at">
-            <UInput
-              v-model="state.created_at"
-              type="date"
-              icon="i-heroicons-calendar-20-solid"
-              class="w-full"
-            />
-          </UFormField>
-
-          <div class="flex justify-between pt-4">
-            <UButton
-              type="submit"
-              :label="
-                isLoading
-                  ? 'Menyimpan...'
-                  : isOverBudget
-                    ? 'Saldo Tidak Cukup'
-                    : isEditing
-                      ? 'Simpan Perubahan'
-                      : 'Simpan Transaksi'
-              "
-              :loading="isLoading"
-              :disabled="isOverBudget"
-              :color="isOverBudget ? 'error' : 'primary'"
-              class="cursor-pointer active:scale-95 disabled:opacity-70"
-            />
-            <UButton
-              variant="outline"
-              color="neutral"
-              :disabled="isLoading"
-              @click="clearForm"
-              class="cursor-pointer active:scale-95"
-            >
-              Bersihkan
-            </UButton>
           </div>
-        </div>
         </Transition>
       </UForm>
     </template>
