@@ -14,7 +14,7 @@ const percentageTrend = computed(() => {
   const previous = props.lastAmount ?? 0;
 
   if (previous === 0 && current === 0) return "0%";
-  if (previous === 0) return "100%";
+  if (previous === 0) return "Baru";
 
   const delta = current - previous;
   const ratio = (delta / Math.abs(previous)) * 100;
@@ -36,9 +36,17 @@ const icon = computed(() =>
 
 // Single source of truth untuk semantik tone tren
 const tone = computed(() => {
-  const delta = (props.amount ?? 0) - (props.lastAmount ?? 0);
+  const isExpense = props.title?.toLowerCase() === "pengeluaran";
+  const current = props.amount ?? 0;
+  const previous = props.lastAmount ?? 0;
+
+  // Jika nilai saat ini negatif pada tabungan/saldo, mutlak buruk (warning)
+  if (!isExpense && current < 0) return "bad";
+
+  const delta = current - previous;
   if (percentageTrend.value === "0%" || delta === 0) return "neutral";
-  const upIsGood = props.title?.toLowerCase() !== "pengeluaran";
+
+  const upIsGood = !isExpense;
   return (delta > 0) === upIsGood ? "good" : "bad";
 });
 
@@ -86,12 +94,12 @@ const { currency } = useCurrency(animatedValue);
       </div>
     </div>
 
-    <div class="text-lg xl:text-2xl font-extrabold text-gray-900 dark:text-white mb-3 truncate">
+    <div class="text-base sm:text-lg xl:text-2xl font-extrabold text-gray-900 dark:text-white mb-3">
       <USkeleton class="h-8 w-3/4 rounded-md" v-if="loading" />
 
       <ClientOnly v-else>
-        <div class="flex items-start truncate">
-          <span>{{ currency.main }}</span>
+        <div class="flex items-start">
+          <span class="break-all sm:break-normal">{{ currency.main }}</span>
           <sup
             v-if="currency.fraction"
             class="text-xs sm:text-sm font-semibold ml-0.5 mt-1 opacity-70"
