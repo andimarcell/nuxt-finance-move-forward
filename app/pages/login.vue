@@ -186,15 +186,67 @@ const handleForgotPassword = async () => {
 </script>
 
 <template>
-  <div class="max-w-md mx-auto mt-20 px-4">
-    <UCard v-if="!success">
+  <div class="max-w-md mx-auto mt-10 sm:mt-16 px-4 pb-16 animate-fade-in-up">
+    <!-- Brand header -->
+    <div class="flex flex-col items-center text-center mb-6">
+      <NuxtLink to="/" class="flex items-center gap-2 hover:opacity-80 transition">
+        <img src="/favicon.ico" class="w-10 h-10 rounded-lg shadow-sm" alt="FTracker" />
+        <span class="text-2xl font-extrabold tracking-tight text-gray-900 dark:text-white">FTracker</span>
+      </NuxtLink>
+      <p class="mt-2 text-sm text-gray-500 dark:text-gray-400 max-w-xs">
+        Kelola arus kas dan akuntabilitas keuangan dalam satu tempat.
+      </p>
+    </div>
+
+    <UCard v-if="!success" class="shadow-lg shadow-gray-200/50 dark:shadow-black/30 border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden">
       <template #header>
-        <div class="flex items-center justify-between">
-          <h3 class="text-lg font-bold leading-6 text-gray-900 dark:text-white">
-            <span v-if="authMode === 'login'">Masuk ke FTracker</span>
-            <span v-else-if="authMode === 'register'">Daftar Akun Baru</span>
-            <span v-else>Masuk Tanpa Password</span>
-          </h3>
+        <div class="flex flex-col gap-4">
+          <div>
+            <h3 class="text-lg font-extrabold leading-6 text-gray-900 dark:text-white">
+              <span v-if="authMode === 'login'">Selamat datang kembali</span>
+              <span v-else-if="authMode === 'register'">Buat akun baru</span>
+              <span v-else>Masuk tanpa password</span>
+            </h3>
+            <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
+              <span v-if="authMode === 'login'">Masuk ke FTracker untuk lanjut ke dashboard.</span>
+              <span v-else-if="authMode === 'register'">Daftar gratis, verifikasi via email.</span>
+              <span v-else>Kami kirimkan tautan login aman ke email kamu.</span>
+            </p>
+          </div>
+
+          <!-- Segmented mode tabs -->
+          <div class="grid grid-cols-3 gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl" role="tablist">
+            <button
+              type="button"
+              role="tab"
+              :aria-selected="authMode === 'login'"
+              @click="authMode = 'login'"
+              class="py-2 px-2 rounded-lg text-xs sm:text-sm font-bold transition cursor-pointer"
+              :class="authMode === 'login' ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+            >
+              Masuk
+            </button>
+            <button
+              type="button"
+              role="tab"
+              :aria-selected="authMode === 'register'"
+              @click="authMode = 'register'"
+              class="py-2 px-2 rounded-lg text-xs sm:text-sm font-bold transition cursor-pointer"
+              :class="authMode === 'register' ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+            >
+              Daftar
+            </button>
+            <button
+              type="button"
+              role="tab"
+              :aria-selected="authMode === 'magic-link'"
+              @click="authMode = 'magic-link'"
+              class="py-2 px-2 rounded-lg text-xs sm:text-sm font-bold transition cursor-pointer"
+              :class="authMode === 'magic-link' ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'"
+            >
+              Magic Link
+            </button>
+          </div>
         </div>
       </template>
 
@@ -248,105 +300,63 @@ const handleForgotPassword = async () => {
           color="primary"
           variant="solid"
           block
-          class="mt-6"
+          size="lg"
+          class="mt-6 font-bold rounded-xl cursor-pointer"
           :loading="isLoading"
           :icon="authMode === 'magic-link' ? 'i-heroicons-sparkles' : ''"
         >
           {{
             authMode === "login"
-              ? "Masuk"
+              ? "Masuk ke Dashboard"
               : authMode === "register"
-                ? "Daftar"
+                ? "Buat Akun"
                 : "Kirim Magic Link"
           }}
         </UButton>
         <!-- Tombol Lupa Password (Hanya muncul jika mode login biasa/password) -->
-        <div v-if="authMode === 'login'" class="text-right mt-1">
+        <div v-if="authMode === 'login'" class="text-center mt-2">
           <button
             type="button"
-            class="text-xs text-gray-500 hover:text-primary transition font-medium cursor-pointer"
+            class="text-xs text-gray-500 hover:text-primary transition font-medium cursor-pointer disabled:opacity-50"
             @click="handleForgotPassword"
-            :disabled="isResetting"
+            :disabled="isResetting || isLoading"
           >
-            Lupa password? / Reset Password
+            {{ isResetting ? "Mengirim tautan reset..." : "Lupa password? Reset di sini" }}
           </button>
         </div>
       </form>
 
-      <!-- Toggle Mode Bawah -->
-      <div class="mt-6 space-y-3 text-center text-sm">
-        <!-- Pemisah Visual Pakai Tailwind -->
-        <div class="relative flex items-center py-2">
-          <div class="grow border-t border-gray-200 dark:border-gray-800"></div>
-          <span class="shrink-0 mx-4 text-gray-400 text-xs font-medium"
-            >ATAU</span
-          >
-          <div class="grow border-t border-gray-200 dark:border-gray-800"></div>
-        </div>
-
-        <div class="flex flex-col space-y-2">
-          <!-- Tombol Toggle Dinamis -->
-          <UButton
-            variant="ghost"
-            color="neutral"
-            block
-            :icon="
-              authMode === 'magic-link'
-                ? 'i-heroicons-key'
-                : 'i-heroicons-envelope-open'
-            "
-            @click="
-              authMode = authMode === 'magic-link' ? 'login' : 'magic-link'
-            "
-          >
-            {{
-              authMode === "magic-link"
-                ? "Kembali Pakai Password"
-                : "Login Pakai Magic Link"
-            }}
-          </UButton>
-
-          <!-- Toggle Login / Register -->
-          <div
-            v-show="authMode !== 'magic-link'"
-            class="text-gray-500 dark:text-gray-400 mt-2"
-          >
-            {{
-              authMode === "login" ? "Belum punya akun?" : "Sudah punya akun?"
-            }}
-            <button
-              type="button"
-              @click="authMode = authMode === 'login' ? 'register' : 'login'"
-              class="text-primary font-semibold hover:underline"
-              :disabled="isLoading"
-            >
-              {{ authMode === "login" ? "Daftar di sini" : "Masuk di sini" }}
-            </button>
-          </div>
-        </div>
+      <!-- Info keamanan -->
+      <div class="mt-6 flex items-center justify-center gap-2 text-[11px] text-gray-400 dark:text-gray-500">
+        <UIcon name="i-heroicons-shield-check" class="w-4 h-4" />
+        <span>Dilindungi autentikasi terenkripsi Supabase</span>
       </div>
     </UCard>
 
     <!-- Halaman Sukses Khusus Magic Link -->
-    <UCard v-else class="text-center">
+    <UCard v-else class="text-center shadow-lg rounded-2xl">
       <template #header>
         <h3
-          class="text-base font-semibold leading-6 text-gray-900 dark:text-white"
+          class="text-base font-extrabold leading-6 text-gray-900 dark:text-white"
         >
-          Email Telah Dikirim.
+          Email Telah Dikirim
         </h3>
       </template>
-      <div class="text-center space-y-4">
-        <UIcon
-          name="i-heroicons-paper-airplane"
-          class="w-12 h-12 text-primary mx-auto"
-        />
-        <p class="text-gray-500 dark:text-gray-400">
-          Silakan cek email <strong>{{ email }}</strong> untuk mengonfirmasi
+      <div class="text-center space-y-4 py-2">
+        <div class="w-16 h-16 rounded-full bg-primary/10 text-primary flex items-center justify-center mx-auto">
+          <UIcon
+            name="i-heroicons-paper-airplane"
+            class="w-8 h-8"
+          />
+        </div>
+        <p class="text-sm text-gray-500 dark:text-gray-400 max-w-xs mx-auto">
+          Silakan cek email <strong class="text-gray-900 dark:text-white">{{ email }}</strong> untuk mengonfirmasi
           login kamu.
         </p>
         <UButton
           variant="ghost"
+          color="neutral"
+          class="cursor-pointer"
           @click="
             success = false;
             authMode = 'login';
