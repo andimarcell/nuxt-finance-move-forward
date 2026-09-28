@@ -1,7 +1,13 @@
 <script setup>
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 const activeIndex = ref(0);
+const colorMode = useColorMode();
+const isDark = computed(() => colorMode.value === "dark");
+const chartStrokeColor = computed(() => (isDark.value ? "#111827" : "#ffffff"));
+const chartCenterValueColor = computed(() =>
+  isDark.value ? "#ffffff" : "#111827",
+);
 
 const props = defineProps({
   transactions: {
@@ -205,7 +211,7 @@ const chartOptions = computed(() => {
     labels: categorySummary.value.labels,
     stroke: {
       show: true,
-      colors: ["#111827"],
+      colors: [chartStrokeColor.value],
       width: 4,
     },
     colors: categorySummary.value.colors, // Merujuk ke warna dinamis tiap kategori
@@ -227,7 +233,7 @@ const chartOptions = computed(() => {
               fontSize: "22px",
               fontFamily: "Inter, sans-serif",
               fontWeight: "bold",
-              color: "#ffffff",
+              color: chartCenterValueColor.value,
               offsetY: 6,
               // Menghitung persen secara dinamis saat kursor melakukan HOVER
               formatter: function (val, opts) {
@@ -269,6 +275,27 @@ const chartOptions = computed(() => {
 });
 
 const series = computed(() => categorySummary.value.series);
+
+// Jaga activeIndex agar tidak out-of-bounds saat daftar kategori berubah
+watch(
+  () => categorySummary.value.list.length,
+  (len) => {
+    if (activeIndex.value >= len) activeIndex.value = 0;
+  },
+);
+
+// Klik pada legenda ikut memfilter tabel transaksi via parent
+const legendKey = (item) => item?.name?.toLowerCase() ?? "";
+const isLegendActive = (item) =>
+  props.activeCategory?.toLowerCase?.() === legendKey(item);
+const toggleLegendCategory = (item, index) => {
+  activeIndex.value = index;
+  if (isLegendActive(item)) {
+    emit("update:activeCategory", null);
+  } else {
+    emit("update:activeCategory", legendKey(item));
+  }
+};
 </script>
 
 <template>
@@ -292,7 +319,7 @@ const series = computed(() => categorySummary.value.series);
 
       <!-- Tombol Sakelar Dinamis Belanja/Masuk -->
       <div
-        class="flex gap-1 bg-gray-50 dark:bg-gray-800 p-1 rounded-lg border border-gray-100 dark:border-gray-800 shrink-0 w-full sm:w-auto justify-center-safe"
+        class="flex gap-1 bg-gray-50 dark:bg-gray-800 p-1 rounded-lg border border-gray-100 dark:border-gray-800 shrink-0 w-full sm:w-auto justify-center"
       >
         <button
           type="button"
@@ -374,10 +401,18 @@ const series = computed(() => categorySummary.value.series);
         tag="div"
         class="grid grid-cols-2 gap-x-4 gap-y-5 justify-items-center max-w-sm mx-auto"
       >
-        <div
-          v-for="item in categorySummary.list"
+        <button
+          v-for="(item, index) in categorySummary.list"
           :key="item.name"
-          class="flex flex-col items-center min-w-30"
+          type="button"
+          class="flex flex-col items-center min-w-30 rounded-xl px-2 py-1 transition cursor-pointer hover:bg-gray-100/70 dark:hover:bg-gray-800/60 focus-visible:outline-2 focus-visible:outline-primary"
+          :class="
+            isLegendActive(item)
+              ? 'ring-2 ring-primary/40 bg-primary/5'
+              : 'ring-1 ring-transparent'
+          "
+          :aria-pressed="isLegendActive(item)"
+          @click="toggleLegendCategory(item, index)"
         >
           <!-- Baris 1: Titik Warna + Nama Kategori -->
           <div class="flex items-center space-x-2">
@@ -401,7 +436,7 @@ const series = computed(() => categorySummary.value.series);
               {{ item.percent }}
             </span>
           </div>
-        </div>
+        </button>
       </TransitionGroup>
     </div>
   </div>

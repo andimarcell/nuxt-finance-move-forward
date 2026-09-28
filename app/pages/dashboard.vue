@@ -98,6 +98,15 @@ watch(activeChartType, () => {
   searchQuery.value = "";
 });
 
+// Legenda grafik dan dropdown kategori saling eksklusif agar tidak konflik
+watch(activeCategory, (val) => {
+  if (val) selectedCategory.value = "all";
+});
+
+watch(selectedCategory, (val) => {
+  if (getCategoryValue(val) !== "all") activeCategory.value = null;
+});
+
 const getCategoryValue = (cat) => {
   if (cat && typeof cat === "object") return cat.value;
   return cat;
@@ -110,23 +119,34 @@ const filteredTransactionsList = computed(() => {
   // A. Filter Tipe Utama (Semua, Pengeluaran, Pemasukan)
   let filtered = txs.filter((transaction) => {
     if (activeChartType.value === "all") {
-      if (activeCategory.value) {
-        const targetType =
-          activeCategory.value === "pemasukan" ? "income" : "expense";
-        return transaction.type?.toLowerCase() === targetType;
+      const legendCategory = activeCategory.value?.toLowerCase()?.trim();
+      if (legendCategory) {
+        if (legendCategory === "pemasukan")
+          return transaction.type?.toLowerCase() === "income";
+        if (legendCategory === "pengeluaran")
+          return transaction.type?.toLowerCase() === "expense";
       }
       return true;
     }
     return transaction.type?.toLowerCase() === activeChartType.value;
   });
 
-  // B. Filter Kategori Dropdown / Klik Grafik
+  // B. Filter Kategori Dropdown / Klik Grafik / Klik Legenda
   filtered = filtered.filter((t) => {
-    if (activeCategory.value && activeChartType.value !== "all") {
-      return (
-        t.category?.toLowerCase()?.trim() ===
-        activeCategory.value?.toLowerCase()?.trim()
-      );
+    const legendCategory = activeCategory.value?.toLowerCase()?.trim();
+    const targetType =
+      legendCategory === "pemasukan"
+        ? "income"
+        : legendCategory === "pengeluaran"
+          ? "expense"
+          : null;
+
+    if (legendCategory && activeChartType.value === "all" && targetType) {
+      return t.type?.toLowerCase() === targetType;
+    }
+
+    if (legendCategory && activeChartType.value !== "all") {
+      return t.category?.toLowerCase()?.trim() === legendCategory;
     }
 
     const filterValue = getCategoryValue(selectedCategory.value);
