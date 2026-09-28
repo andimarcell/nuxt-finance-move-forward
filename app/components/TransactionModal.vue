@@ -10,7 +10,6 @@ import {
   onMounted,
 } from "vue";
 import { z } from "zod";
-import { transactionTypes } from "~/utils/constants";
 
 const formRef = useTemplateRef("form");
 const textareaRef = ref(null);
@@ -336,18 +335,11 @@ async function onSubmit(event) {
 </script>
 
 <template>
-  <Transition
-      enter-active-class="transition-all duration-300 ease-out"
-      enter-from-class="opacity-0 scale-95"
-      enter-to-class="opacity-100 scale-100"
-      leave-active-class="transition-all duration-200 ease-in"
-      leave-from-class="opacity-100 scale-100"
-      leave-to-class="opacity-0 scale-95"
-    >
   <UModal
     scrollable
     v-model:open="isModalOpen"
-    title="Formulir Transaksi"
+    :title="isEditing ? 'Ubah Transaksi' : 'Tambah Transaksi'"
+    :description="isEditing ? 'Perbarui detail transaksi yang sudah tercatat.' : 'Catat pemasukan atau pengeluaran baru.'"
     :dismissible="false"
     :close="{ color: 'neutral', variant: 'ghost', class: 'cursor-pointer' }"
   >
@@ -517,13 +509,24 @@ async function onSubmit(event) {
           <div class="flex justify-between pt-4">
             <UButton
               type="submit"
-              :label="isOverBudget ? 'Saldo Tidak Cukup' : 'Simpan Transaksi'"
+              :label="
+                isLoading
+                  ? 'Menyimpan...'
+                  : isOverBudget
+                    ? 'Saldo Tidak Cukup'
+                    : isEditing
+                      ? 'Simpan Perubahan'
+                      : 'Simpan Transaksi'
+              "
+              :loading="isLoading"
               :disabled="isOverBudget"
-              :color="isOverBudget ? 'red' : 'primary'"
-              class="cursor-pointer active:scale-95"
+              :color="isOverBudget ? 'error' : 'primary'"
+              class="cursor-pointer active:scale-95 disabled:opacity-70"
             />
             <UButton
               variant="outline"
+              color="neutral"
+              :disabled="isLoading"
               @click="clearForm"
               class="cursor-pointer active:scale-95"
             >
@@ -535,5 +538,4 @@ async function onSubmit(event) {
       </UForm>
     </template>
   </UModal>
-</Transition>
 </template>
