@@ -1,6 +1,11 @@
 <script setup>
-// Domain Vercel resmi kamu
-const siteUrl = 'https://pelacak-keuangan-mulia.vercel.app';
+// Domain publik aplikasi, diambil dari NUXT_PUBLIC_SITE_URL (lihat nuxt.config.ts)
+const {
+  public: { siteUrl },
+} = useRuntimeConfig();
+
+// Gambar pratinjau saat tautan dibagikan: harus file yang benar-benar ada di public/
+const ogImage = `${siteUrl}/laptop-baru.png`;
 
 // Konfigurasi Head & Favicon
 useHead({
@@ -24,20 +29,18 @@ useSeoMeta({
   title: 'FTracker - Lacak Keuanganmu Lebih Cerdas',
   description: 'FTracker membantu Anda mencatat pemasukan, mengawasi pengeluaran, dan mengontrol sisa saldo secara otomatis agar Anda bisa menabung dengan lebih baik.',
   
-  // KEMBALI MENGGUNAKAN LANDSCAPE (Sangat disukai WhatsApp & Meta)
   ogTitle: 'FTracker - Lacak Keuanganmu Lebih Cerdas',
   ogDescription: 'Kelola dan awasi pengeluaran harian Anda secara otomatis menggunakan sistem analisis keuangan cerdas dan responsif.',
-  ogImage: `${siteUrl}/preview-laptop.png`, 
-  ogImageWidth: 1200,
-  ogImageHeight: 630,
+  ogImage,
+  ogImageAlt: 'Pratinjau dashboard FTracker',
   ogType: 'website',
   ogUrl: siteUrl,
-  
+
   // Twitter Card
   twitterCard: 'summary_large_image',
   twitterTitle: 'FTracker - Lacak Keuanganmu Lebih Cerdas',
   twitterDescription: 'Kelola dan awasi pengeluaran harian Anda secara otomatis.',
-  twitterImage: `${siteUrl}/preview-laptop.png`,
+  twitterImage: ogImage,
 })
 </script>
 

@@ -39,6 +39,7 @@ const { current, previous } = useSelectedTimePeriod(
 const {
   transactions,
   isLoading,
+  error: currentPeriodError,
   refreshTransactions,
   income,
   expense,
@@ -50,15 +51,26 @@ const {
 
 const {
   refreshTransactions: refreshPreviousTransactions,
+  error: previousPeriodError,
   incomeTotal: previousIncomeTotal,
   expenseTotal: previousExpenseTotal,
   savingsTotal: previousSavingsTotal,
   balanceTotal: previousBalanceTotal,
 } = useFetchTransactions(previous);
 
+// Gagal memuat data itu beda dengan "belum ada transaksi", jadi ditampilkan terpisah
+const fetchError = computed(
+  () => currentPeriodError.value || previousPeriodError.value,
+);
+
 const refreshAll = async () => {
   await Promise.all([refreshTransactions(), refreshPreviousTransactions()]);
 };
+
+// Sinyal refresh dari komponen lain, contohnya tombol "Urungkan" pada toast
+// setelah transaksi dihapus (ketika diklik, barisnya sudah unmount)
+const { refreshToken } = useTransactionsRefresh();
+watch(refreshToken, () => refreshAll());
 
 const nextPeriod = () => {
   if (selectedView.value === "tahunan")
@@ -86,49 +98,46 @@ const periodLabel = computed(() => {
   return format(referenceDate.value, "d MMMM yyyy", { locale: id });
 });
 
-const incomeStatusColor = computed(() => {
-  return incomeTotal.value < previousIncomeTotal.value
-    ? "text-red-600 dark:text-red-400"
-    : "text-green-600 dark:text-green-400";
-});
-
-const expenseStatusColor = computed(() => {
-  const isSpendingMore = expenseTotal.value > previousExpenseTotal.value;
-  const isOverBudget = expenseTotal.value > incomeTotal.value;
-
-  return isSpendingMore || isOverBudget
-    ? "text-red-600 dark:text-red-400"
-    : "text-green-600 dark:text-green-400";
-});
-
-const savingsStatusColor = computed(() => {
-  const isDecreasing = savingsTotal.value < previousSavingsTotal.value;
-  const isNegative = savingsTotal.value < 0;
-
-  return isDecreasing || isNegative
-    ? "text-red-600 dark:text-red-400"
-    : "text-green-600 dark:text-green-400";
-});
-
-const cashColor = computed(() => {
-  return balanceTotal.value < 0
-    ? "text-red-600 dark:text-red-400"
-    : "text-green-600 dark:text-green-400";
-});
-
 const activeChartType = ref("all");
 const selectedCategory = ref("all");
+const searchQuery = ref("");
 const sortBy = ref("date_desc");
 const activeCategory = ref(null);
 
 watch(activeChartType, () => {
   activeCategory.value = null;
   selectedCategory.value = "all";
+  searchQuery.value = "";
+});
+
+// Legenda grafik dan dropdown kategori saling eksklusif agar tidak konflik
+watch(activeCategory, (val) => {
+  if (val) selectedCategory.value = "all";
+});
+
+watch(selectedCategory, (val) => {
+  if (getCategoryValue(val) !== "all") activeCategory.value = null;
 });
 
 const getCategoryValue = (cat) => {
   if (cat && typeof cat === "object") return cat.value;
   return cat;
+};
+
+// Cek apakah ada filter aktif (tipe grafik, kategori, legenda, atau pencarian)
+const isFilterActive = computed(
+  () =>
+    activeChartType.value !== "all" ||
+    getCategoryValue(selectedCategory.value) !== "all" ||
+    !!activeCategory.value ||
+    !!searchQuery.value?.trim(),
+);
+
+const resetFilters = () => {
+  searchQuery.value = "";
+  selectedCategory.value = "all";
+  activeCategory.value = null;
+  activeChartType.value = "all";
 };
 
 // 🟢 FILTER PRESISI LENGKAP: Memisahkan data array yang lolos semua kriteria filter
@@ -138,23 +147,34 @@ const filteredTransactionsList = computed(() => {
   // A. Filter Tipe Utama (Semua, Pengeluaran, Pemasukan)
   let filtered = txs.filter((transaction) => {
     if (activeChartType.value === "all") {
-      if (activeCategory.value) {
-        const targetType =
-          activeCategory.value === "pemasukan" ? "income" : "expense";
-        return transaction.type?.toLowerCase() === targetType;
+      const legendCategory = activeCategory.value?.toLowerCase()?.trim();
+      if (legendCategory) {
+        if (legendCategory === "pemasukan")
+          return transaction.type?.toLowerCase() === "income";
+        if (legendCategory === "pengeluaran")
+          return transaction.type?.toLowerCase() === "expense";
       }
       return true;
     }
     return transaction.type?.toLowerCase() === activeChartType.value;
   });
 
-  // B. Filter Kategori Dropdown / Klik Grafik
+  // B. Filter Kategori Dropdown / Klik Grafik / Klik Legenda
   filtered = filtered.filter((t) => {
-    if (activeCategory.value && activeChartType.value !== "all") {
-      return (
-        t.category?.toLowerCase()?.trim() ===
-        activeCategory.value?.toLowerCase()?.trim()
-      );
+    const legendCategory = activeCategory.value?.toLowerCase()?.trim();
+    const targetType =
+      legendCategory === "pemasukan"
+        ? "income"
+        : legendCategory === "pengeluaran"
+          ? "expense"
+          : null;
+
+    if (legendCategory && activeChartType.value === "all" && targetType) {
+      return t.type?.toLowerCase() === targetType;
+    }
+
+    if (legendCategory && activeChartType.value !== "all") {
+      return t.category?.toLowerCase()?.trim() === legendCategory;
     }
 
     const filterValue = getCategoryValue(selectedCategory.value);
@@ -177,7 +197,17 @@ const filteredTransactionsList = computed(() => {
     return true;
   });
 
-  // C. Pengurutan Data
+  // C. Filter Pencarian Deskripsi / Kategori (Instant Search)
+  if (searchQuery.value?.trim()) {
+    const q = searchQuery.value.toLowerCase().trim();
+    filtered = filtered.filter((t) => {
+      const desc = t.description?.toLowerCase() || "";
+      const cat = t.category?.toLowerCase() || "";
+      return desc.includes(q) || cat.includes(q);
+    });
+  }
+
+  // D. Pengurutan Data
   filtered.sort((a, b) => {
     const dateA = new Date(a.created_at).getTime();
     const dateB = new Date(b.created_at).getTime();
@@ -293,8 +323,14 @@ const categoryFilterItems = computed(() => {
 });
 
 // Panggil Composable Ekspor Laporan
-const { exportToExcel, exportToPDF, exportToMatrixExcel, exportToMatrixPDF } =
-  useExportReport();
+const {
+  isExporting,
+  exportStatus,
+  exportToExcel,
+  exportToPDF,
+  exportToMatrixExcel,
+  exportToMatrixPDF,
+} = useExportReport();
 
 // DROPDOWN EKSPOR: Admin dapat data FULL LENGKAP, Member dapat data BERSIH
 const exportMenuItems = computed(() => [
@@ -376,50 +412,73 @@ const exportMenuItems = computed(() => [
       </div>
     </section>
 
+    <!-- Error State: pengambilan data ke Supabase gagal -->
     <section
-      class="grid text-sm grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 sm:gap-16 mb-10 gap-8 ml-1 sm:ml-0"
+      v-if="fetchError"
+      class="flex flex-col items-center justify-center py-14 px-4 text-center border border-dashed border-red-200 dark:border-red-900/60 rounded-2xl bg-red-50/60 dark:bg-red-950/20 my-4"
+    >
+      <div
+        class="w-14 h-14 rounded-full bg-red-500/10 text-red-600 dark:text-red-400 flex items-center justify-center mb-3"
+      >
+        <UIcon name="i-heroicons-exclamation-triangle" class="w-7 h-7" />
+      </div>
+      <h3
+        class="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-1"
+      >
+        Gagal Memuat Data
+      </h3>
+      <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-sm mb-4">
+        {{ fetchError }}
+      </p>
+      <UButton
+        label="Coba Lagi"
+        icon="i-heroicons-arrow-path"
+        color="error"
+        variant="subtle"
+        class="cursor-pointer font-semibold"
+        :loading="isLoading"
+        @click="refreshAll()"
+      />
+    </section>
+
+    <section
+      class="grid text-sm grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-10"
     >
       <Trend
         title="Pemasukan"
         :amount="incomeTotal"
         :lastAmount="previousIncomeTotal"
         :loading="isLoading"
-        :color="incomeStatusColor"
       />
       <Trend
         title="Pengeluaran"
         :amount="expenseTotal"
         :lastAmount="previousExpenseTotal"
         :loading="isLoading"
-        :color="expenseStatusColor"
       />
       <Trend
         title="Tabungan"
         :amount="savingsTotal"
         :lastAmount="previousSavingsTotal"
         :loading="isLoading"
-        :color="savingsStatusColor"
       />
       <Trend
         title="Total Saldo"
         :amount="balanceTotal"
         :lastAmount="previousBalanceTotal"
         :loading="isLoading"
-        :color="cashColor"
       />
     </section>
 
     <section class="mb-10">
-      <div class="order-1 lg:order-2 lg:col-span-1">
-        <CategoryBreakdown
-          :transactions="transactions"
-          :period="selectedView"
-          :periodLabel="periodLabel"
-          v-model:chartType="activeChartType"
-          v-model:activeCategory="activeCategory"
-          :key="activeChartType"
-        />
-      </div>
+      <CategoryBreakdown
+        :transactions="transactions"
+        :period="selectedView"
+        :periodLabel="periodLabel"
+        v-model:chartType="activeChartType"
+        v-model:activeCategory="activeCategory"
+        :key="activeChartType"
+      />
     </section>
 
     <section
@@ -436,13 +495,15 @@ const exportMenuItems = computed(() => [
       <div
         class="w-full sm:w-auto mt-4 sm:mt-0 flex items-center justify-center sm:justify-end gap-2"
       >
-        <UDropdownMenu :items="exportMenuItems">
+        <UDropdownMenu :items="exportMenuItems" :disabled="isExporting">
           <UButton
             icon="i-heroicons-arrow-down-tray"
             color="neutral"
             variant="outline"
-            class="cursor-pointer sm:w-auto justify-center"
-            label="Unduh Laporan"
+            class="cursor-pointer sm:w-auto justify-center disabled:opacity-70"
+            :label="isExporting ? exportStatus || 'Menyusun laporan...' : 'Unduh Laporan'"
+            :loading="isExporting"
+            :disabled="isExporting"
           />
         </UDropdownMenu>
         <!-- 🔒 KHUSUS ADMIN (Sembunyi di Mode Member) -->
@@ -468,9 +529,31 @@ const exportMenuItems = computed(() => [
 
     <section
       v-if="!isMemberMode"
-      class="flex justify-center sm:justify-end mb-6 ml-1 sm:ml-0 gap-2"
+      class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6 ml-1 sm:ml-0"
     >
-      <div class="w-full max-w-42 sm:w-64">
+      <div class="w-full">
+        <UFormField label="Cari Transaksi">
+          <UInput
+            v-model="searchQuery"
+            icon="i-heroicons-magnifying-glass"
+            placeholder="Ketik keterangan atau kategori..."
+            class="w-full"
+          >
+            <template #trailing>
+              <button
+                v-if="searchQuery"
+                type="button"
+                @click="searchQuery = ''"
+                class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
+              >
+                <UIcon name="i-heroicons-x-mark" class="w-4 h-4" />
+              </button>
+            </template>
+          </UInput>
+        </UFormField>
+      </div>
+
+      <div class="w-full">
         <UFormField label="Saring Kategori">
           <USelectMenu
             v-model="selectedCategory"
@@ -497,7 +580,8 @@ const exportMenuItems = computed(() => [
           </USelectMenu>
         </UFormField>
       </div>
-      <div class="w-full max-w-42 sm:w-64">
+
+      <div class="w-full">
         <UFormField label="Urutkan Berdasarkan">
           <USelect
             v-model="sortBy"
@@ -521,38 +605,99 @@ const exportMenuItems = computed(() => [
       :class="{ 'opacity-50': isLoading, 'transition-opacity': true }"
       class="min-h-150"
     >
-      <div class="order-2 lg:order-1 lg:col-span-2">
-        <div
-          v-for="(transactionOnDay, date) in filteredGroupByDate"
-          :key="date"
-          class="mb-10"
-        >
-          <TransactionDailySummary :date="date" :transaction="transactionOnDay" />
+      <div
+        v-for="(transactionOnDay, date) in filteredGroupByDate"
+        :key="date"
+        class="mb-10"
+      >
+        <TransactionDailySummary :date="date" :transaction="transactionOnDay" />
 
-          <TransitionGroup name="list-item" tag="div">
-            <Transaction
-              v-for="transaction in transactionOnDay"
-              :key="transaction.id"
-              :transaction="transaction"
-              :totalAmount="activeTotalAmount"
-              :read-only="isMemberMode"
-              @edit="onEditClick(transaction)"
-              @delete="refreshAll()"
-            />
-          </TransitionGroup>
-        </div>
+        <TransitionGroup name="list-item" tag="div">
+          <Transaction
+            v-for="transaction in transactionOnDay"
+            :key="transaction.id"
+            :transaction="transaction"
+            :totalAmount="activeTotalAmount"
+            :read-only="isMemberMode"
+            @edit="onEditClick(transaction)"
+            @delete="refreshAll()"
+          />
+        </TransitionGroup>
+      </div>
 
-        <div
-          v-if="transactions.length === 0 && !isLoading"
-          class="text-center py-10 text-gray-500"
-        >
-          Tidak ada transaksi pada periode ini.
+      <!-- Modern Empty State: bedakan periode yang kosong dengan filter tanpa hasil -->
+      <div
+        v-if="!isLoading && !fetchError && filteredTransactionsList.length === 0"
+        class="flex flex-col items-center justify-center py-16 px-4 text-center border border-dashed border-gray-200 dark:border-gray-800 rounded-2xl bg-gray-50/50 dark:bg-gray-900/40 my-4"
+      >
+        <div class="w-14 h-14 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-3">
+          <UIcon
+            :name="
+              isFilterActive
+                ? 'i-heroicons-magnifying-glass'
+                : 'i-heroicons-document-text'
+            "
+            class="w-7 h-7"
+          />
         </div>
+        <h3 class="text-base sm:text-lg font-bold text-gray-900 dark:text-white mb-1">
+          {{ isFilterActive ? "Tidak Ada yang Cocok" : "Belum Ada Transaksi" }}
+        </h3>
+        <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-sm mb-4">
+          {{
+            isFilterActive
+              ? "Tidak ada transaksi yang cocok dengan filter atau kata kunci saat ini."
+              : "Tidak ada riwayat pemasukan atau pengeluaran pada periode ini."
+          }}
+        </p>
+        <UButton
+          v-if="isFilterActive"
+          label="Reset Filter"
+          icon="i-heroicons-arrow-path"
+          color="neutral"
+          variant="subtle"
+          class="cursor-pointer font-semibold"
+          @click="resetFilters"
+        />
+        <UButton
+          v-else
+          label="Catat Transaksi Sekarang"
+          icon="i-heroicons-plus-circle"
+          color="primary"
+          variant="solid"
+          class="cursor-pointer font-semibold shadow-sm"
+          @click="onAddClick"
+        />
       </div>
     </section>
 
-    <section v-if="!isMemberMode && isLoading && transactions.length === 0">
-      <USkeleton v-for="i in 3" :key="i" class="h-8 w-full rounded-md mb-2" />
+    <!-- Skeleton Loading State yang Halus & Proporsional -->
+    <section v-if="isLoading && transactions.length === 0" class="space-y-4 my-6">
+      <div v-for="i in 3" :key="i" class="p-4 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-white dark:bg-gray-900/50 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <USkeleton class="w-10 h-10 rounded-full" />
+          <div class="space-y-2">
+            <USkeleton class="h-4 w-32" />
+            <USkeleton class="h-3 w-20" />
+          </div>
+        </div>
+        <USkeleton class="h-5 w-24" />
+      </div>
     </section>
+
+    <!-- Floating Action Button khusus Mobile di Halaman Dashboard -->
+    <div
+      v-if="!isMemberMode"
+      class="fixed bottom-6 right-6 sm:hidden z-40"
+    >
+      <button
+        type="button"
+        @click="onAddClick"
+        class="w-14 h-14 rounded-full bg-primary text-white shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition cursor-pointer ring-4 ring-primary/20"
+        aria-label="Tambah Transaksi"
+      >
+        <UIcon name="i-heroicons-plus" class="w-7 h-7" />
+      </button>
+    </div>
   </div>
 </template>
